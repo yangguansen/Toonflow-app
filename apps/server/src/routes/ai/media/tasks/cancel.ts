@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { validateFields } from "@/lib/middleware";
-import { success } from "@/lib/responseFormat";
+import { error, success } from "@/lib/responseFormat";
 import u from "@/utils";
 
 export default Router().post("/", validateFields({
@@ -9,6 +9,10 @@ export default Router().post("/", validateFields({
 }), async (req, res) => {
   const { directory, taskIds } = req.body;
   const cwd = await u.workspace.resolveWorkspace(req, directory);
-  u.mediaTasks.cancel(cwd, taskIds);
+  const blockedTaskIds = u.mediaTasks.cancel(cwd, taskIds);
+  if (blockedTaskIds.length) {
+    res.status(409).json(error("视频任务提交后不可取消，请等待后台生成完成", { taskIds: blockedTaskIds }, 409));
+    return;
+  }
   res.json(success());
 });

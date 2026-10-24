@@ -13,7 +13,7 @@
         </button>
       </div>
       <nav class="sidebarNav" aria-label="首页导航">
-        <button v-for="section in homeSections" :key="section.id" class="sidebarItem" :class="{ active: activeSection === section.id }" type="button" :aria-current="activeSection === section.id ? 'location' : undefined" :aria-label="translate(section.label)" :title="translate(section.label)" @click="scrollToSection(section.id)">
+            <button v-for="section in homeSections" :key="section.id" class="sidebarItem" :class="{ active: activeSection === section.id }" type="button" :aria-current="activeSection === section.id ? 'location' : undefined" :aria-label="translate(section.label)" :title="translate(section.label)" @click="scrollToSection(section.id)">
           <component :is="section.icon" :size="18" aria-hidden="true" />
           <span class="sidebarText">{{ translate(section.label) }}</span>
         </button>
@@ -24,6 +24,9 @@
         </button>
       </nav>
       <div class="sidebarFooter">
+        <div v-if="creditSummary?.enabled || creditError" class="sidebarCredits">
+          <creditBalance />
+        </div>
         <button class="sidebarItem deviceButton" :class="{ connected: deviceHubEnabled || mobileConnection.online === true }" type="button" :aria-label="mobileConnectionLabel" :title="mobileConnectionLabel" @click="mobileConnectVisible = true">
           <span class="sidebarIcon">
             <component :is="deviceHubEnabled || mobileConnection.mode === 'remote' ? IconDeviceDesktop : IconQrcode" :size="18" aria-hidden="true" />
@@ -38,10 +41,10 @@
           </span>
           <span class="sidebarText">设置</span>
         </button>
-        <a class="sidebarItem githubLink" href="https://github.com/HBAI-Ltd/Toonflow-app" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
-          <icon-brand-github :size="18" aria-hidden="true" />
-          <span class="sidebarText">GitHub</span>
-        </a>
+        <button class="sidebarItem" type="button" :aria-label="`退出登录，当前账号 ${authState.profile?.displayName || authState.profile?.email || ''}`" :title="authState.profile?.email || '退出登录'" @click="logout">
+          <icon-logout :size="18" aria-hidden="true" />
+          <span class="sidebarText">{{ authState.profile?.displayName || authState.profile?.email || "退出登录" }}</span>
+        </button>
       </div>
     </aside>
     <el-scrollbar ref="pageScroll" class="pageScroll" @scroll="updateActiveSection">
@@ -66,36 +69,33 @@
                   <div class="composerFooter">
                     <div class="composerTools">
                       <el-button class="attachmentButton" text circle :icon="IconPaperclip" :disabled="creating || opening" aria-label="添加附件" title="添加附件" @click="attachmentInput?.click()" />
-                      <workspacePicker ref="promptWorkspacePicker" v-model="workspaceDirectory" :disabled="creating || opening" />
                     </div>
                     <div class="sendActions">
                       <modelPopover v-model="selectedModel" v-model:reasoningEffort="reasoningEffort" class="modelSelect" :disabled="creating || opening" />
-                      <el-button class="sendButton" type="primary" :circle="!!workspaceDirectory" :icon="workspaceDirectory ? IconArrowUp : IconFolder" :loading="creating" :disabled="creating || opening" :aria-label="workspaceDirectory ? '发送' : '选择工作目录'" @click="workspaceDirectory ? createProject() : promptWorkspacePicker?.chooseDirectory()">
-                        <template v-if="!workspaceDirectory" #default>选择工作目录</template>
-                      </el-button>
+                      <el-button class="sendButton" type="primary" circle :icon="IconArrowUp" :loading="creating" :disabled="creating || opening" aria-label="开始创作" title="开始创作" @click="createProject()" />
                     </div>
                   </div>
                 </template>
               </el-card>
-              <p v-if="!workspaceDirectory" class="workspaceHint" role="status">请先选择一个空文件夹作为工作目录，画布和素材会保存在这里。</p>
+              <p class="workspaceHint" role="status">项目会创建在当前账号的独立空间，画布和素材由服务端自动保存。</p>
             </div>
           </section>
           <section class="projectList" data-home-section="projects" aria-labelledby="projectListTitle">
             <h2 id="projectListTitle">项目</h2>
             <div class="projectItems">
               <el-card class="projectCard" shadow="never" :bodyStyle="{ padding: '0', height: '100%' }">
-                <button class="projectLaunch" type="button" :disabled="creating || opening || relocationPicker?.selecting" :aria-busy="creating || relocationPicker?.selecting" title="选择空文件夹新建，或打开已有项目" @click="createProject(false)">
+                <button class="projectLaunch" type="button" :disabled="creating || opening" :aria-busy="creating" title="新建项目" @click="createProject(false)">
                   <span class="launchIcon">
-                    <icon-loader-2 v-if="creating || relocationPicker?.selecting" class="isLoading" :size="24" aria-hidden="true" />
+                    <icon-loader-2 v-if="creating" class="isLoading" :size="24" aria-hidden="true" />
                     <icon-plus v-else :size="24" aria-hidden="true" />
                   </span>
                   <span class="launchText">
                     <span class="launchTitle">新建项目</span>
-                    <span class="launchDescription">或打开已有项目</span>
+                    <span class="launchDescription">创建独立创作空间</span>
                   </span>
                 </button>
               </el-card>
-              <el-card v-for="project in sortedProjects" :key="project.directory" class="projectCard" shadow="never" :bodyStyle="{ padding: '0', height: '100%' }">
+              <el-card v-for="project in sortedProjects" :key="project.id" class="projectCard" shadow="never" :bodyStyle="{ padding: '0', height: '100%' }">
                 <button class="projectEntry" type="button" :disabled="creating || opening" :title="project.directory" :aria-label="`打开项目 ${project.name}`" @click="openProject(project)">
                   <projectCover :directory="project.directory" />
                   <span class="projectInfo">
@@ -105,19 +105,17 @@
                 </button>
                 <div class="projectActions">
                   <el-button circle :icon="IconEdit" :disabled="creating || opening" :aria-label="`重命名项目 ${project.name}`" title="重命名" @click="renameProject(project)" />
-                  <el-button circle plain type="danger" :icon="IconTrash" :disabled="creating || opening" :aria-label="`移除项目 ${project.name}`" title="从列表移除，不删除文件" @click="workspaceStore.removeProject(project.directory)" />
+                  <el-button circle plain type="danger" :icon="IconTrash" :disabled="creating || opening" :aria-label="`移除项目 ${project.name}`" title="从列表移除，不删除文件" @click="removeProject(project)" />
                 </div>
               </el-card>
             </div>
           </section>
-          <div data-home-section="explore"><explore :scrollElement="pageScroll?.wrapRef" /></div>
         </el-main>
       </div>
     </el-scrollbar>
     <assetLibraryDialog v-model="assetsVisible" />
     <settings v-model="settingsVisible" />
     <mobileConnect v-model="mobileConnectVisible" />
-    <workspacePicker ref="relocationPicker" hideTrigger />
   </div>
 </template>
 
@@ -130,10 +128,10 @@ import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type InputInstance, type ScrollbarInstance } from "element-plus";
 import { getReadableFileMimeType, readableFileAccept } from "@toonflow/server/documentFormats";
 import {
-  IconQrcode, IconDeviceDesktop, IconHome, IconCompass,
+  IconQrcode, IconDeviceDesktop, IconHome,
   IconArrowUp, IconPlus, IconLoader2,
   IconFolder, IconEdit,
-  IconTrash, IconPaperclip,
+  IconTrash, IconPaperclip, IconLogout,
 } from "@tabler/icons-vue";
 import modelPopover from "@/components/modelPopover.vue";
 import attachmentList from "@/components/agent/attachmentList.vue";
@@ -141,16 +139,17 @@ import { createPastedTextFile, readTextAttachment } from "@/components/agent/tex
 import type { AgentAttachment } from "@/components/agent/types";
 import logoUrl from "@toonflow/assets/logo.svg";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
+import { authState, signOut } from "@/lib/auth";
+import { resetSettings } from "@/stores/settings";
 import { hasDesktopUpdate } from "@/stores/desktopUpdate";
 import { deviceHubEnabled, mobileConnection, mobileConnectionLabel } from "@/lib/mobile";
-import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { waitForControlValue } from "@/lib/mcpControl";
 import settings from "@/components/settings/index.vue";
 import assetLibraryDialog from "./assetLibraryDialog.vue";
 import bg from "./bg.vue";
-import explore from "./explore.vue";
 import projectCover from "./projectCover.vue";
-import workspacePicker from "./workspacePicker.vue";
+import creditBalance from "@/components/credits/creditBalance.vue";
+import { creditError, creditSummary, refreshCredits } from "@/lib/credits";
 
 const settingsVisible = ref(false);
 const assetsVisible = ref(false);
@@ -162,15 +161,12 @@ const activeSection = ref("home");
 const homeSections = [
   { id: "home", label: "首页", icon: IconHome },
   { id: "projects", label: "项目", icon: IconFolder },
-  { id: "explore", label: "探索", icon: IconCompass },
 ];
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
 const pageLifetime = new AbortController();
 const creating = ref(false);
 const opening = ref(false);
-const promptWorkspacePicker = ref<InstanceType<typeof workspacePicker>>();
-const relocationPicker = ref<InstanceType<typeof workspacePicker>>();
 const prompt = ref("");
 const promptInput = ref<InputInstance>();
 const promptAttachments = ref<AgentAttachment[]>([]);
@@ -180,7 +176,6 @@ const draggingAttachments = ref(false);
 let attachmentDragDepth = 0;
 const workspaceStore = useWorkspaceStore();
 const { project, projectList } = storeToRefs(workspaceStore);
-const workspaceDirectory = ref(project.value?.directory ?? "");
 const placeholderPhrases = [
   "描述你想创作的内容，让灵感从这里开始…",
   "把一个故事灵感，变成一段精彩的短片…",
@@ -199,6 +194,9 @@ onMounted(() => {
   window.addEventListener("dragend", clearAttachmentDrag, true);
   window.addEventListener("drop", clearAttachmentDrag, true);
   window.addEventListener("blur", clearAttachmentDrag);
+  window.addEventListener("toonflow:credits-changed", refreshCredits);
+  void loadProjects();
+  void refreshCredits();
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let phraseIndex = 0;
   watch([() => !!prompt.value, locale], ([hasInput], _previous, onCleanup) => {
@@ -241,6 +239,7 @@ onUnmounted(() => {
   window.removeEventListener("dragend", clearAttachmentDrag, true);
   window.removeEventListener("drop", clearAttachmentDrag, true);
   window.removeEventListener("blur", clearAttachmentDrag);
+  window.removeEventListener("toonflow:credits-changed", refreshCredits);
 });
 watch([creating, opening], ([creating, opening]) => {
   if (creating || opening) {
@@ -271,10 +270,6 @@ function updateActiveSection() {
   const wrap = pageScroll.value?.wrapRef;
   if (!wrap) return;
   backgroundScrollTop.value = wrap.scrollTop;
-  if (wrap.scrollTop > 0 && wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 2) {
-    activeSection.value = "explore";
-    return;
-  }
   const top = wrap.getBoundingClientRect().top + 120;
   for (const section of wrap.querySelectorAll<HTMLElement>("[data-home-section]")) {
     if (section.getBoundingClientRect().top <= top) activeSection.value = section.dataset.homeSection!;
@@ -401,18 +396,7 @@ async function openProject(project: Project) {
   if (creating.value || opening.value) return;
   opening.value = true;
   try {
-    const directory = project.directory;
-    try { await workspaceStore.openProject(directory); }
-    catch (err) {
-      if (!axios.isAxiosError(err) || err.response?.status !== 404) throw err;
-      const reselect = await ElMessageBox.confirm(`项目“${project.name}”的文件夹不存在，是否重新选择文件夹？`, "工作目录不存在", {
-        confirmButtonText: "重新选择", cancelButtonText: "取消", type: "warning",
-      }).then(() => true, () => false);
-      if (!reselect) return;
-      const directory = await relocationPicker.value?.chooseDirectory();
-      if (!directory) return;
-      await workspaceStore.openProject(directory, project.directory);
-    }
+    await workspaceStore.openProject(project.id);
     await enterWorkspace();
   } catch (err) {
     ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
@@ -426,19 +410,26 @@ async function renameProject(project: Project) {
     inputValue: project.name, confirmButtonText: "保存", cancelButtonText: "取消",
     inputValidator: value => !!value?.trim() || "项目名称不能为空",
   }).catch(() => null);
-  if (result) workspaceStore.renameProject(project.directory, result.value);
+  if (!result) return;
+  try {
+    await workspaceStore.renameProject(project.id, result.value);
+  } catch (error) {
+    ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data.message || "重命名项目失败" : "重命名项目失败");
+  }
 }
 
 async function createProject(fromPrompt = true) {
-  if (creating.value || opening.value || (fromPrompt && !workspaceDirectory.value)) return;
-  const path = fromPrompt ? workspaceDirectory.value : await relocationPicker.value?.chooseDirectory();
-  if (!path || creating.value || opening.value || pageLifetime.signal.aborted) return;
+  if (creating.value || opening.value) return;
+  const result = await ElMessageBox.prompt("请输入项目名称", fromPrompt ? "开始创作" : "新建项目", {
+    inputValue: "未命名项目",
+    confirmButtonText: "创建",
+    cancelButtonText: "取消",
+    inputValidator: value => !!value?.trim() || "项目名称不能为空",
+  }).catch(() => null);
+  if (!result || pageLifetime.signal.aborted) return;
   creating.value = true;
   try {
-    const { directory, empty } = await useWorkspaceFiles(path).list();
-    if (fromPrompt && !empty) return ElMessage.warning("该文件夹不为空，请重新选择空文件夹；已有项目请使用“新建项目”入口或点击项目列表打开。");
-    if (empty) await useWorkspaceFiles(directory).writeJson("画布1.json", { toonflowCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
-    await workspaceStore.openProject(directory);
+    await workspaceStore.createProject(result.value.trim(), pageLifetime.signal);
     if (fromPrompt && (prompt.value.trim() || promptAttachments.value.length)) {
       workspaceStore.pendingAgentMessage = { directory: workspaceStore.project!.directory, prompt: prompt.value, attachments: [...promptAttachments.value], model: selectedModel.value, reasoningEffort: reasoningEffort.value };
     }
@@ -450,6 +441,40 @@ async function createProject(fromPrompt = true) {
   } finally {
     creating.value = false;
   }
+}
+
+async function loadProjects() {
+  try {
+    await workspaceStore.loadProjectList(pageLifetime.signal);
+  } catch (error) {
+    if (!pageLifetime.signal.aborted) ElMessage.error(axios.isAxiosError<{ message?: string }>(error)
+      ? error.response?.data.message || "读取项目列表失败"
+      : "读取项目列表失败");
+  }
+}
+
+async function removeProject(project: Project) {
+  try {
+    await workspaceStore.removeProject(project.id);
+  } catch (error) {
+    ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data.message || "移除项目失败" : "移除项目失败");
+  }
+}
+
+async function logout() {
+  const confirmed = await ElMessageBox.confirm(translate("请确认是否退出登录。"), translate("确认退出登录"), {
+    type: "warning",
+    confirmButtonText: translate("退出登录"),
+    cancelButtonText: translate("取消"),
+    closeOnClickModal: false,
+  }).then(() => true, () => false);
+  if (!confirmed) return;
+  await signOut();
+  resetSettings();
+  workspaceStore.project = null;
+  workspaceStore.projectList = [];
+  workspaceStore.pendingAgentMessage = null;
+  await router.replace("/login");
 }
 </script>
 
@@ -501,6 +526,14 @@ async function createProject(fromPrompt = true) {
         padding-inline: 14px;
 
         .sidebarText { max-width: 0; opacity: 0; }
+      }
+
+      .sidebarCredits {
+        :deep(.creditTrigger) {
+          justify-content: center;
+          padding-inline: 0;
+        }
+        :deep(.creditText) { display: none; }
       }
     }
   }
@@ -639,6 +672,29 @@ async function createProject(fromPrompt = true) {
       .sidebarDivider { margin: 12px 8px; border: 0; border-top: 1px solid var(--el-border-color-lighter); }
     }
     .sidebarFooter { margin-top: auto; padding-top: 24px; }
+    .sidebarCredits {
+      width: 100%;
+
+      :deep(.creditTrigger) {
+        justify-content: flex-start;
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: var(--ui-radius);
+        font-size: 14px;
+      }
+      :deep(.creditTrigger > span) {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      :deep(.creditText) {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       --sidebarMotion: 0ms;

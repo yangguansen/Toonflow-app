@@ -9,14 +9,17 @@
 import { onBeforeUnmount, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { isMobile, isRemoteMobile } from "@/lib/platform";
+import { authState } from "@/lib/auth";
+import { openEventStream } from "@/lib/eventStream";
 import ffmpeg from "./panels/pluginMarket/ffmpeg.vue";
 
 const visible = ref(false);
 let pending = false;
-const events = new EventSource("/api/ffmpeg/events");
-events.onmessage = async event => {
+let active = true;
+const events = authState.isAdmin ? openEventStream("/api/ffmpeg/events", { onMessage: handleEvent }) : undefined;
+async function handleEvent(message: string) {
   let data: { type?: string };
-  try { data = JSON.parse(event.data); }
+  try { data = JSON.parse(message); }
   catch { return; }
   if (data?.type !== "required" || pending || visible.value) return;
   if (isMobile && !isRemoteMobile) {
@@ -28,14 +31,17 @@ events.onmessage = async event => {
     await ElMessageBox.confirm("当前操作需要 FFmpeg，但尚未检测到可用版本。是否下载并安装？", "需要 FFmpeg", {
       confirmButtonText: "下载并安装", cancelButtonText: "暂不下载", closeOnClickModal: false,
     });
-    if (events.readyState !== EventSource.CLOSED) visible.value = true;
+    if (active) visible.value = true;
   } catch {
     // 用户取消后保留当前操作的失败结果，不自动重新生成媒体。
   } finally {
     pending = false;
   }
-};
-onBeforeUnmount(() => events.close());
+}
+onBeforeUnmount(() => {
+  active = false;
+  events?.close();
+});
 </script>
 
 <style scoped>

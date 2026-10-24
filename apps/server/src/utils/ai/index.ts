@@ -14,6 +14,7 @@ import { readFile, stat } from "@toonflow/file";
 import { resolveWorkspacePath } from "@/utils/workspace/files";
 import { getReadableFileMimeType } from "@/lib/documentFormats";
 import { readDocument } from "@/utils/documents";
+import { getProviderSecret } from "@/utils/config/providerSecrets";
 
 export { fetchProviderModels } from "@/utils/ai/models";
 export { refreshProviderModels } from "@/utils/ai/initialize";
@@ -94,7 +95,7 @@ export function getConfiguredModel(providerId: string, modelId: string) {
   const providers = conf.get("settings", {}).customProviders;
   const parsed = providerSchema.safeParse(Array.isArray(providers) ? providers.find(item => item?.id === providerId) : undefined);
   if (!parsed.success) throw Object.assign(new Error("请先在设置中配置模型供应商"), { status: 400 });
-  const provider = parsed.data;
+  const provider = { ...parsed.data, apiKey: getProviderSecret(providerId, parsed.data) };
   const model = provider.models.find(item => item.id === modelId);
   if (!model) throw Object.assign(new Error("所选模型不存在，请重新选择"), { status: 400 });
   const baseUrl = new URL(provider.apiUrl);

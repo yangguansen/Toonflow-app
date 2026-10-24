@@ -1,17 +1,19 @@
 import { createHash, randomUUID } from "node:crypto";
 import { lstat, mkdir, opendir, readFile, realpath, rmdir, unlink } from "@toonflow/file";
-import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
-import conf from "@/utils/conf";
+import { basename, dirname, extname, relative, resolve, sep } from "node:path";
 import { isWithin, lockWorkspaceFiles, protectWorkspaceRoot, renameWorkspaceFile, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 import { mentionAssetType, type MentionAsset, type MentionQuery } from "@/agent/mentionSources";
+import { getAccountAssetsDirectory, getAccountIdForWorkspace, getCurrentAuthUser } from "@/utils/auth/context";
 
 const maxAssetBytes = 100 * 1024 * 1024;
 type AssetSearch = { key: string; directory: string; offset: number; touched: number; busy: boolean; iterator: AsyncGenerator<MentionAsset>;
   timer: ReturnType<typeof setTimeout>; closing?: Promise<void> };
 const assetSearches = new Map<string, AssetSearch>();
 
-export async function getAssetsDirectory() {
-  const directory = join(dirname(conf.path), "assets");
+export async function getAssetsDirectory(workspaceDirectory?: string) {
+  const directory = workspaceDirectory
+    ? getAccountAssetsDirectory(getAccountIdForWorkspace(workspaceDirectory))
+    : getAccountAssetsDirectory(getCurrentAuthUser().id);
   try { return await realpath(directory); }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -20,8 +22,8 @@ export async function getAssetsDirectory() {
   }
 }
 
-async function resolveAssetPath(path: string) {
-  const root = await getAssetsDirectory();
+async function resolveAssetPath(path: string, workspaceDirectory?: string) {
+  const root = await getAssetsDirectory(workspaceDirectory);
   const resolved = await resolveWorkspacePath(root, path);
   protectWorkspaceRoot(resolved.directory, resolved.path);
   return resolved;
@@ -36,9 +38,9 @@ async function readAssetContents(path: string, signal?: AbortSignal) {
   return content;
 }
 
-export async function readAssetFile(path: string, signal?: AbortSignal) {
+export async function readAssetFile(path: string, signal?: AbortSignal, workspaceDirectory?: string) {
   signal?.throwIfAborted();
-  const resolved = await resolveAssetPath(path);
+  const resolved = await resolveAssetPath(path, workspaceDirectory);
   const release = lockWorkspaceFiles([resolved.path]);
   try {
     const content = await readAssetContents(resolved.path, signal);
@@ -47,9 +49,9 @@ export async function readAssetFile(path: string, signal?: AbortSignal) {
   } finally { release(); }
 }
 
-export async function writeAssetFile(path: string, content: string | Uint8Array, revision?: string) {
+export async function writeAssetFile(path: string, content: string | Uint8Array, revision?: string, workspaceDirectory?: string) {
   if (Buffer.byteLength(content) > maxAssetBytes) throw new Error("素材文件不能超过 100 MB");
-  const target = await resolveAssetPath(path);
+  const target = await resolveAssetPath(path, workspaceDirectory);
   const release = lockWorkspaceFiles([target.path]);
   try {
     if (revision !== undefined) {
@@ -61,16 +63,16 @@ export async function writeAssetFile(path: string, content: string | Uint8Array,
   } finally { release(); }
 }
 
-export async function createAssetDirectory(path: string) {
-  const target = await resolveAssetPath(path);
+export async function createAssetDirectory(path: string, workspaceDirectory?: string) {
+  const target = await resolveAssetPath(path, workspaceDirectory);
   const release = lockWorkspaceFiles([target.path]);
   try { await mkdir(target.path); }
   finally { release(); }
 }
 
-export async function moveAsset(path: string, target: string) {
-  const source = await resolveAssetPath(path);
-  const destination = await resolveAssetPath(target);
+export async function moveAsset(path: string, target: string, workspaceDirectory?: string) {
+  const source = await resolveAssetPath(path, workspaceDirectory);
+  const destination = await resolveAssetPath(target, workspaceDirectory);
   destination.path = resolve(dirname(destination.path), basename(resolve(destination.directory, target)));
   const release = lockWorkspaceFiles([source.path, destination.path]);
   try {
@@ -85,8 +87,8 @@ export async function moveAsset(path: string, target: string) {
   } finally { release(); }
 }
 
-export async function removeAsset(path: string) {
-  const target = await resolveAssetPath(path);
+export async function removeAsset(path: string, workspaceDirectory?: string) {
+  const target = await resolveAssetPath(path, workspaceDirectory);
   const release = lockWorkspaceFiles([target.path]);
   try {
     const info = await lstat(target.path);
@@ -100,7 +102,7 @@ export async function removeAsset(path: string) {
 }
 
 export async function importAssetFile(cwd: string, path: string, target?: string, signal?: AbortSignal) {
-  const source = await readAssetFile(path, signal);
+  const source = await readAssetFile(path, signal, cwd);
   const directory = await realpath(cwd);
   const workspacePath = target ?? `assets/imported/${randomUUID()}${extname(source.path)}`;
   const destination = await resolveWorkspacePath(directory, workspacePath, target === undefined);
@@ -140,9 +142,9 @@ async function* walkAssets(directory: string, path: string, recursive: boolean, 
   }
 }
 
-export async function queryAssets(options: MentionQuery & { path?: string }) {
+export async function queryAssets(options: MentionQuery & { path?: string; workspaceDirectory?: string }) {
   options.signal?.throwIfAborted();
-  const directory = await getAssetsDirectory();
+  const directory = await getAssetsDirectory(options.workspaceDirectory);
   const path = options.path || ".";
   const resolved = await resolveWorkspacePath(directory, path);
   // ACT: 每页扫描期间复用业务锁，目录变更时拒绝新游标；分页间释放锁并保留至多四个短期迭代器。

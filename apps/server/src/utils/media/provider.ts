@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, unlink } from "@toonflow/file";
 import { dirname, join } from "node:path";
 import { createContext, SourceTextModule } from "node:vm";
-import type { AudioConvertOptions, Provider, ProviderTools } from "@toonflow/providers";
+import type { AudioConvertOptions, Provider, ProviderTask, ProviderTools, ProviderUsage } from "@toonflow/providers";
 import tfRouter from "@toonflow/providers/media/tfRouter";
 import { parse, parseExpression } from "@babel/parser";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import conf from "@/utils/conf";
 import { convertAudio } from "@/utils/media/audioProcessor";
 import { createWorkspaceFfmpeg } from "@/utils/ffmpeg";
 import { lockWorkspaceFiles, writeWorkspaceFile } from "@/utils/workspace/files";
+import { getProviderSecret } from "@/utils/config/providerSecrets";
 
 type Expression = Extract<ReturnType<typeof parseExpression>, { type: "ParenthesizedExpression" }>["expression"];
 type ObjectExpression = Extract<Expression, { type: "ObjectExpression" }>;
@@ -178,7 +179,7 @@ function parseProvider(source: string) {
   function value(name: string) {
     const property = entries.get(name);
     if (!property) return undefined;
-    const allowConstant = name === "version" || name === "rules";
+    const allowConstant = name === "version" || name === "rules" || name === "models";
     if (property.type !== "ObjectProperty" || (property.shorthand && !allowConstant)) invalid(t`${name} 必须直接使用字面量`);
     let expression = unwrap(property.value as Expression);
     if (allowConstant && expression.type === "Identifier") {
@@ -262,7 +263,7 @@ export async function listMediaProviders() {
   const path = await directory();
   if (!path) return [];
   const files = await readdir(path, { withFileTypes: true });
-  return Promise.all(files.filter(file => file.isFile() && mediaProviderFileSchema.safeParse(file.name).success)
+  return Promise.all(files.filter(file => file.isFile() && file.name === "openrouterMedia.ts")
     .sort((left, right) => left.name.localeCompare(right.name)).map(async file => {
       let current = { fileName: file.name, id: file.name.slice(0, -3), source: "", revision: "" };
       try {
@@ -316,8 +317,8 @@ export async function saveMediaProvider(fileName: string, models: z.infer<typeof
 }
 
 export function getMediaProviderApiKey(id: string) {
-  const value: unknown = conf.get(`settings.mediaProviderConfigs.${id}.apiKey`);
-  return typeof value === "string" ? value.trim().replace(/^Bearer(?:\s+|$)/i, "").trim() : "";
+  const config = conf.get(`settings.mediaProviderConfigs.${id}`) as Record<string, unknown> | undefined;
+  return getProviderSecret(id, config).replace(/^Bearer(?:\s+|$)/i, "").trim();
 }
 
 export async function refreshMediaProviderModels(fileName: string, revision?: string, modelType?: ModelType, expectedApiKey?: string) {
@@ -380,7 +381,15 @@ export async function deleteMediaProvider(fileName: string, revision: string) {
   } finally { release(); }
 }
 
-export async function loadMediaProviderSource(source: string, config: Record<string, unknown> = {}, signal?: AbortSignal, fetchRequest = fetch, cwd?: string) {
+export async function loadMediaProviderSource(
+  source: string,
+  config: Record<string, unknown> = {},
+  signal?: AbortSignal,
+  fetchRequest = fetch,
+  cwd?: string,
+  reportUsage?: (usage: ProviderUsage) => void,
+  reportTask?: (task: ProviderTask) => void | Promise<void>,
+) {
   signal?.throwIfAborted();
   const { id } = parseProvider(source);
   // ACT: VM 只隔离可信供应商的全局上下文；不可信代码需要独立进程等更强隔离。
@@ -418,6 +427,8 @@ export async function loadMediaProviderSource(source: string, config: Record<str
         const requestSignal = init?.signal === null ? undefined : init?.signal ?? (input instanceof Request ? input.signal : undefined);
         return fetchRequest(input, { ...init, signal: requestSignal ? AbortSignal.any([signal, requestSignal]) : signal });
       }, { preconnect: fetchRequest.preconnect }) as typeof fetch : fetchRequest,
+      reportUsage: usage => reportUsage?.(usage),
+      reportTask: task => reportTask?.(task),
       hash: Bun.hash,
       errorMessage: (value: unknown) => mediaErrorMessage(value, providerConfig),
       image: Bun.Image,

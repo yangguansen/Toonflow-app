@@ -86,7 +86,7 @@ const providerReadme = computed(() => {
 });
 const formOptions = computed<Options>(() => ({ form: { labelPosition: "top", disabled: saving.value }, submitBtn: false, resetBtn: false }));
 const providerRules = computed(() =>
-  formCreate.copyRules(activeProvider.value?.rules ?? []),
+  formCreate.copyRules([...(activeProvider.value?.rules ?? [])]),
 );
 
 watch(

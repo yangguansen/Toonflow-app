@@ -1,13 +1,17 @@
 import { t, translateMessage } from "@/lib/i18n";
 import { mkdir, readFile, realpath, stat, unlink } from "@toonflow/file";
-import { join, relative } from "node:path";
-import { mediaProviders, type Provider } from "@toonflow/providers";
+import { basename, join, relative } from "node:path";
+import { mediaProviders, type Provider, type ProviderTask, type ProviderUsage } from "@toonflow/providers";
 import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@toonflow/tools-scaffold/runtime";
 import conf from "@/utils/conf";
+import { withProviderSecrets } from "@/utils/config/providerSecrets";
 import { getMediaProvider, listMediaProviders, loadMediaProviderSource } from "@/utils/media/provider";
 import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 import { beginGeneration, getProviderPrice } from "@/utils/media/billing";
 import { detectMimeType, readPriceReference } from "@/utils/media/priceReference";
+import { attachAiVideoJob, creditsForUsd, failAiUsage, isAiCreditsEnabled, reserveAiUsage, settleAiUsage } from "@/utils/credits";
+import { getCurrentAuthUser } from "@/utils/auth/context";
+import type { AuthUser } from "@/utils/auth/supabase";
 
 const maxMediaSize = 100 * 1024 * 1024;
 const mediaExtensions: Record<string, string> = {
@@ -134,11 +138,19 @@ async function prepareRequest<T>(directory: string | undefined, mediaType: "imag
   };
 }
 
-async function configuredProvider(request: MediaGenerationRequest, mediaType: "image" | "video" | "audio", signal?: AbortSignal, directory?: string) {
+async function configuredProvider(
+  request: MediaGenerationRequest,
+  mediaType: "image" | "video" | "audio",
+  signal?: AbortSignal,
+  directory?: string,
+  reportUsage?: (usage: ProviderUsage) => void,
+  reportTask?: (task: ProviderTask) => void | Promise<void>,
+) {
   const info = await getMediaProvider(request.providerId);
   if (!info.models.some(model => model.id === request.modelId && model.type === mediaType)) invalid("所选媒体模型不存在或类型不匹配，请重新选择");
   const configurations = record(conf.get("settings", {}).mediaProviderConfigs);
-  return loadMediaProviderSource(info.source, record(configurations[info.id]), signal, undefined, directory);
+  return loadMediaProviderSource(info.source, withProviderSecrets(info.id, record(configurations[info.id])),
+    signal, undefined, directory, reportUsage, reportTask);
 }
 
 async function preparePriceRequest(directory: string | undefined, mediaType: "image" | "video" | "audio", request: MediaGenerationRequest, signal?: AbortSignal) {
@@ -158,37 +170,28 @@ export async function getMediaPrice(directory: string | undefined, mediaType: "i
   if (!provider.getPrice) return null;
   const prepared = await preparePriceRequest(directory, mediaType, request, signal);
   signal?.throwIfAborted();
-  return getProviderPrice(provider, prepared);
+  const price = await getProviderPrice(provider, prepared);
+  if (!price || price.costUsd === undefined || !isAiCreditsEnabled(provider.id)) return price;
+  const credits = creditsForUsd(price.costUsd) / 1_000_000;
+  return {
+    price: `${new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 }).format(credits)} 积分`,
+    tips: "按上游价格估算；生成完成后按实际费用结算，失败不扣积分。",
+  };
 }
 
-export async function generateMedia(
-  cwd: string,
+export async function saveGeneratedMedia(
+  directory: string,
   mediaType: "image" | "video" | "audio",
-  request: MediaGenerationRequest,
+  assets: MediaAsset[],
+  outputDirectory: string,
   signal?: AbortSignal,
-): Promise<GeneratedMedia[]> {
-  signal?.throwIfAborted();
-  if (!request.prompt.trim()) invalid("请输入生成提示词");
-  const directory = await realpath(cwd);
-  const outputDirectory = request.outputDirectory ?? "assets/generated";
-  await resolveWorkspacePath(directory, outputDirectory, true);
-  const provider = await configuredProvider(request, mediaType, signal, directory);
-  const generate = mediaType === "image" ? provider.generateImage : mediaType === "video" ? provider.generateVideo : provider.generateAudio;
-  if (typeof generate !== "function") invalid(t`此供应商不支持${translateMessage({ image: "图片", video: "视频", audio: "音频" }[mediaType])}生成`);
-  const rules = Array.isArray(provider.rules) ? provider.rules : [];
-  if (rules.some(rule => rule.field === "apiKey") && (typeof provider.config.apiKey !== "string" || !provider.config.apiKey.trim())) invalid("请先在媒体模型设置中配置供应商 API Key");
-  const prepared = await prepareRequest(directory, mediaType, request, readReference, signal);
-  signal?.throwIfAborted();
-  const finish = beginGeneration(provider);
-  const written: string[] = [];
+  fileStem?: string,
+) {
+  if (!Array.isArray(assets) || !assets.length) invalid("供应商未返回生成结果");
+  const created: string[] = [];
   const result: GeneratedMedia[] = [];
   try {
-    signal?.throwIfAborted();
-    const { type, ...parameters } = prepared;
-    const assets = type === "audio" ? await provider.generateAudio!(parameters as AudioRequest)
-      : type === "image" ? await provider.generateImage!(parameters as ImageRequest) : await provider.generateVideo!(parameters as VideoRequest);
-    if (!Array.isArray(assets) || !assets.length) invalid("供应商未返回生成结果");
-    for (const asset of assets) {
+    for (const [index, asset] of assets.entries()) {
       signal?.throwIfAborted();
       const { bytes, mimeType } = await assetBytes(asset, mediaType, signal);
       signal?.throwIfAborted();
@@ -196,19 +199,109 @@ export async function generateMedia(
       const release = lockWorkspaceFiles([output.path]);
       try {
         await mkdir(output.path, { recursive: true });
-        const file = join(outputDirectory, `${mediaType}${crypto.randomUUID()}.${mediaExtensions[mimeType]}`);
+        const stem = fileStem ? `${fileStem}${assets.length > 1 ? `-${index + 1}` : ""}` : crypto.randomUUID();
+        const file = join(outputDirectory, `${mediaType}-${stem}.${mediaExtensions[mimeType]}`);
         const { path } = await resolveWorkspacePath(directory, file);
         signal?.throwIfAborted();
-        await writeWorkspaceFile(path, bytes, true);
-        written.push(path);
+        const existing = await stat(path).catch((error: NodeJS.ErrnoException) => {
+          if (error.code === "ENOENT") return undefined;
+          throw error;
+        });
+        if (!existing) {
+          await writeWorkspaceFile(path, bytes, true);
+          created.push(path);
+        }
         result.push({ path: relative(directory, path).replace(/\\/g, "/"), mimeType, mediaType });
       } finally { release(); }
     }
+    return result;
+  } catch (error) {
+    await Promise.all(created.map(path => unlink(path).catch((cause: NodeJS.ErrnoException) => { if (cause.code !== "ENOENT") throw cause; })));
+    throw error;
+  }
+}
+
+export async function generateMedia(
+  cwd: string,
+  mediaType: "image" | "video" | "audio",
+  request: MediaGenerationRequest,
+  signal?: AbortSignal,
+  usageId: string = crypto.randomUUID(),
+  onReady?: () => void,
+): Promise<GeneratedMedia[]> {
+  signal?.throwIfAborted();
+  if (!request.prompt.trim()) invalid("请输入生成提示词");
+  const directory = await realpath(cwd);
+  const outputDirectory = request.outputDirectory ?? "assets/generated";
+  await resolveWorkspacePath(directory, outputDirectory, true);
+  let reportedUsage: ProviderUsage | undefined;
+  let billingUser: AuthUser | undefined;
+  let reserved = false;
+  let announced = false;
+  const announceReady = () => {
+    if (announced) return;
+    announced = true;
+    onReady?.();
+  };
+  const provider = await configuredProvider(request, mediaType, signal, directory, usage => { reportedUsage = usage; }, async task => {
+    if (!billingUser || !reserved) throw new Error("生成任务尚未完成积分预扣");
+    await attachAiVideoJob(billingUser, { usageId, jobId: task.jobId, outputDirectory });
+    announceReady();
+  });
+  const generate = mediaType === "image" ? provider.generateImage : mediaType === "video" ? provider.generateVideo : provider.generateAudio;
+  if (typeof generate !== "function") invalid(t`此供应商不支持${translateMessage({ image: "图片", video: "视频", audio: "音频" }[mediaType])}生成`);
+  const rules = Array.isArray(provider.rules) ? provider.rules : [];
+  if (rules.some(rule => rule.field === "apiKey") && (typeof provider.config.apiKey !== "string" || !provider.config.apiKey.trim())) invalid("请先在媒体模型设置中配置供应商 API Key");
+  const prepared = await prepareRequest(directory, mediaType, request, readReference, signal);
+  signal?.throwIfAborted();
+  const billingEnabled = isAiCreditsEnabled(provider.id);
+  billingUser = billingEnabled ? getCurrentAuthUser() : undefined;
+  let estimatedCostUsd: number | undefined;
+  if (billingEnabled && billingUser) {
+    if (!provider.getPrice) invalid("当前模型无法预估积分消耗");
+    const price = await getProviderPrice(provider, await preparePriceRequest(directory, mediaType, request, signal));
+    if (price?.costUsd === undefined) invalid("当前模型或参数组合无法预估积分消耗");
+    estimatedCostUsd = price.costUsd;
+    const projectId = basename(directory);
+    await reserveAiUsage(billingUser, {
+      usageId,
+      projectId: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(projectId) ? projectId : null,
+      mediaType,
+      providerId: provider.id,
+      modelId: request.modelId,
+      estimatedCostUsd,
+    });
+    reserved = true;
+  }
+  if (!(billingEnabled && mediaType === "video" && provider.id === "openrouterMedia")) announceReady();
+  const finish = beginGeneration(provider);
+  try {
     signal?.throwIfAborted();
+    const { type, ...parameters } = prepared;
+    const assets = type === "audio" ? await provider.generateAudio!(parameters as AudioRequest)
+      : type === "image" ? await provider.generateImage!(parameters as ImageRequest) : await provider.generateVideo!(parameters as VideoRequest);
+    const result = await saveGeneratedMedia(directory, mediaType, assets, outputDirectory, signal, usageId);
+    signal?.throwIfAborted();
+    if (billingEnabled && billingUser && reserved) {
+      const actualCostUsd = reportedUsage?.costUsd ?? estimatedCostUsd;
+      if (actualCostUsd === undefined) throw new Error("生成任务缺少上游结算费用");
+      await settleAiUsage(billingUser, {
+        usageId,
+        actualCostUsd,
+        providerGenerationId: reportedUsage?.generationId,
+        isByok: reportedUsage?.isByok,
+      });
+    }
     return result;
   } catch (err) {
-    // ACT: 只回滚本次创建的文件，保留目录中已有的节点资源。
-    await Promise.all(written.map(path => unlink(path).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; })));
+    if (billingEnabled && billingUser && reserved) {
+      // ACT: OpenRouter 视频没有远端取消接口；这里按“未交付结果不扣积分”释放预扣，潜在上游成本由平台承担。
+      await failAiUsage(billingUser, {
+        usageId,
+        actualCostUsd: reportedUsage?.costUsd,
+        errorCode: err instanceof Error ? err.name : "GENERATION_FAILED",
+      }).catch(error => console.error("积分释放失败：", error));
+    }
     throw err;
   } finally { finish(); }
 }

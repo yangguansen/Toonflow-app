@@ -72,7 +72,6 @@ import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
 import { customProviders, saveSettings } from "@/stores/settings";
 import type { MediaProvider } from "@/components/settings/panels/mediaModel/types";
 import { useHelloStore } from "@/stores/hello";
-import anonymousData from "@/lib/anonymousData";
 import logoSvg from "@toonflow/assets/logo.svg?raw";
 import bg from "./bg.vue";
 import languageSelect from "@/components/languageSelect.vue";
@@ -107,7 +106,6 @@ async function completeSetup() {
   saving.value = true;
   try {
     await hello.complete();
-    anonymousData.track(view.value === "custom" ? "onboarding.complete" : "onboarding.skip");
     await router.replace("/home");
   } catch {
     ElMessage.error("保存引导状态失败，请重试");
@@ -184,7 +182,6 @@ async function configureProviders() {
     invalidateNodeModels("media");
     if (request.signal.aborted) return;
     await hello.complete();
-    anonymousData.track("onboarding.complete");
     loginKey.value = "";
     ElMessage.success("TF-Router API Key 已配置完成");
     await router.replace("/home");

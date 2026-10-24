@@ -52,7 +52,6 @@
       <p v-if="cloneError" class="cloneError" role="alert">{{ cloneError }}</p>
     </template>
   </exploreProcess>
-  <workspacePicker ref="directoryPicker" hideTrigger />
 </template>
 
 <script setup lang="ts">
@@ -66,12 +65,10 @@ import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { useWorkspaceStore } from "@/stores/workspace";
 import videoPlayer from "@/components/videoPlayer.vue";
 import exploreProcess from "./exploreProcess.vue";
-import workspacePicker from "./workspacePicker.vue";
 
 const props = defineProps<{ projectId: string }>();
 const emit = defineEmits<{ close: []; updated: [project: TfExploreProject] }>();
 const workspace = useWorkspaceStore();
-const directoryPicker = ref<InstanceType<typeof workspacePicker>>();
 const videoFailed = ref(false);
 const detail = shallowRef<TfExploreDetail>();
 const process = shallowRef<TfExploreProcess>();
@@ -173,19 +170,22 @@ async function cloneProject() {
   cloning.value = true;
   cloneStatus.value = "";
   cloneError.value = "";
+  let createdProjectId = "";
   try {
-    const parentDirectory = await directoryPicker.value?.chooseDirectory();
-    if (!parentDirectory || signal.aborted) return;
     cloneStatus.value = "正在下载项目…";
     const { downloadUrl } = await tf.getExploreDownload(project.id, { signal });
     signal.throwIfAborted();
-    const { directory } = await useWorkspaceFiles(parentDirectory).cloneProject({ url: downloadUrl, name: project.title }, signal);
+    const created = await workspace.createProject(project.title, signal, false);
+    createdProjectId = created.id;
+    const { directory } = await useWorkspaceFiles(created.directory).cloneProject({ url: downloadUrl, name: project.title }, signal);
     cloneStatus.value = `已下载到 ${directory}`;
-    await workspace.addProject(directory, project.title);
     cloneStatus.value = `已添加到项目列表 · ${directory}`;
     ElMessage.success("项目已克隆并添加到项目列表");
   } catch (error) {
-    if (!signal.aborted) cloneError.value = errorMessage(error, "克隆项目失败");
+    if (!signal.aborted) {
+      if (createdProjectId) await workspace.removeProject(createdProjectId).catch(() => {});
+      cloneError.value = errorMessage(error, "克隆项目失败");
+    }
   } finally {
     if (!signal.aborted) cloning.value = false;
   }

@@ -34,9 +34,9 @@ export function createAssetContext(cwd: string): NonNullable<ToolContext["assets
       signal?.throwIfAborted();
       let result;
       if (action === "list") {
-        result = await queryMentionAssets({ path, query: request.query, cursor: request.cursor, limit: request.limit, signal });
+        result = await queryMentionAssets({ path, query: request.query, cursor: request.cursor, limit: request.limit, signal, workspaceDirectory: cwd });
       } else if (action === "read") {
-        const file = await readAssetFile(path!, signal);
+        const file = await readAssetFile(path!, signal, cwd);
         const { mimeType, dataType } = mentionAssetType(file.path);
         const isDocument = !!getDocumentMimeType(file.path, mimeType);
         const details = { path: file.path, revision: file.revision, mimeType, size: file.content.byteLength,
@@ -45,7 +45,7 @@ export function createAssetContext(cwd: string): NonNullable<ToolContext["assets
         if (dataType !== "STRING" && !isImage && !isDocument) {
           return { content: [{ type: "text", text: `${JSON.stringify(details)}\n此格式不直接展示内容；使用 import 复制到工作区后预览或交给相应节点。` }], details };
         }
-        const root = await getAssetsDirectory();
+        const root = await getAssetsDirectory(cwd);
         const absolutePath = resolve(root, file.path);
         const allowSnapshot = (candidate: string) => {
           signal?.throwIfAborted();
@@ -61,7 +61,7 @@ export function createAssetContext(cwd: string): NonNullable<ToolContext["assets
       } else if (action === "create" || action === "update") {
         const content = request.content ?? await readWorkspaceSource(cwd, request.sourcePath!, signal);
         signal?.throwIfAborted();
-        result = await writeAssetFile(path!, content, request.revision);
+        result = await writeAssetFile(path!, content, request.revision, cwd);
       } else if (action === "import") {
         const imported = await importAssetFile(cwd, path!, target, signal);
         const { mimeType, dataType } = mentionAssetType(imported.path);
@@ -70,9 +70,9 @@ export function createAssetContext(cwd: string): NonNullable<ToolContext["assets
         const preview = dataType === "IMAGE" ? `\n![导入素材](<${url}>)` : "";
         return { content: [{ type: "text", text: `${JSON.stringify(details)}${preview}` }], details };
       } else {
-        if (action === "mkdir") await createAssetDirectory(path!);
-        else if (action === "move") await moveAsset(path!, target!);
-        else await removeAsset(path!);
+        if (action === "mkdir") await createAssetDirectory(path!, cwd);
+        else if (action === "move") await moveAsset(path!, target!, cwd);
+        else await removeAsset(path!, cwd);
         result = { action, path, ...(target ? { target } : {}) };
       }
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };

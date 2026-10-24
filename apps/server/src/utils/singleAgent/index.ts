@@ -1,4 +1,4 @@
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { mkdir, rm } from "@toonflow/file";
 import { t } from "@/lib/i18n";
 import { createAgentSession, DefaultResourceLoader, SessionManager, SettingsManager } from "@earendil-works/pi-coding-agent";
@@ -11,9 +11,9 @@ import { getToolResultText } from "@/agent/runtime/sessions";
 import { createQuestionContext, answerQuestion } from "@/agent/bridge/question";
 import { listTools, loadTool, validateToolConfig } from "@/utils/plugins/tools";
 import { browserRuntime } from "@/utils/browser";
-import conf from "@/utils/conf";
 import type { ThinkingLevel } from "@/lib/modelReasoning";
 import type { SingleAgentEvent, SingleAgentResult, SingleAgentStatus, SingleAgentToolDescriptor, SingleAgentToolReference, SingleAgentToolResult } from "./types";
+import { getAccountDirectory, getCurrentAuthUser } from "@/utils/auth/context";
 
 type ClientCall = {
   finish(result: SingleAgentToolResult | Error): void;
@@ -35,6 +35,7 @@ type RunState = {
 };
 type SingleSession = {
   id: string;
+  userId: string;
   cwd: string;
   workspaceAvailable: boolean;
   history: SessionManager;
@@ -50,7 +51,9 @@ const sessions = new Map<string, SingleSession>();
 
 function getSession(sessionId: string) {
   const session = sessions.get(sessionId);
-  if (!session || session.closed) throw Object.assign(new Error("临时对话不存在或已关闭"), { status: 404 });
+  if (!session || session.closed || session.userId !== getCurrentAuthUser().id) {
+    throw Object.assign(new Error("临时对话不存在或已关闭"), { status: 404 });
+  }
   return session;
 }
 
@@ -111,10 +114,11 @@ export async function create(options: {
 }, signal?: AbortSignal) {
   signal?.throwIfAborted();
   const id = crypto.randomUUID();
-  const cwd = options.directory ?? join(dirname(conf.path), "singleAgent", id);
+  const user = getCurrentAuthUser();
+  const cwd = options.directory ?? join(getAccountDirectory(user.id), "singleAgent", id);
   if (!options.directory) await mkdir(cwd, { recursive: true });
   const session: SingleSession = {
-    id, cwd, workspaceAvailable: !!options.directory, history: SessionManager.inMemory(cwd),
+    id, userId: user.id, cwd, workspaceAvailable: !!options.directory, history: SessionManager.inMemory(cwd),
     systemPrompt: options.systemPrompt ?? "", tools: [], closed: false,
   };
   sessions.set(id, session);
@@ -368,7 +372,7 @@ export async function close(sessionId: string) {
     } finally {
       sessions.delete(sessionId);
       // 仅清理 create 分配的私有目录，用户提供的工作区由用户管理。
-      if (!session.workspaceAvailable) await rm(join(dirname(conf.path), "singleAgent", session.id), { recursive: true, force: true });
+      if (!session.workspaceAvailable) await rm(join(getAccountDirectory(session.userId), "singleAgent", session.id), { recursive: true, force: true });
     }
   })();
   return session.closing;

@@ -21,10 +21,14 @@ export default router.put("/", validateFields({ settings: z.record(z.string(), z
 }) }), async (req, res) => {
   u.mcpControl.assertAppRequest(req);
   const { settings } = req.body;
-  u.removeLegacySettings(settings);
-  u.cleanNodeMenuSettings(settings);
-  const previousSettings = u.conf.get("settings", {});
-  u.conf.set("settings", settings);
-  const [models] = await Promise.all([u.ai.refreshProviderModels(previousSettings), u.mcpRuntime.reloadMcpRuntime()]);
-  res.json(success({ ...models, aiModels: u.ai.listAiModels(), nodeMenu: u.conf.get("settings.general.nodeMenu") ?? null }, "设置已保存"));
+  const user = u.authContext.getAuthUser(req);
+  const previousUserSettings = await u.userSettings.readUserSettings(user);
+  const userSettings = { ...previousUserSettings, ...u.userSettings.pickUserSettings(settings) };
+  await u.userSettings.writeUserSettings(user, userSettings);
+  res.json(success(u.redactSettings({
+    aiModels: u.ai.listAiModels(),
+    nodeMenu: userSettings.general && typeof userSettings.general === "object"
+      ? (userSettings.general as Record<string, unknown>).nodeMenu ?? null
+      : null,
+  }), "个人设置已保存"));
 });

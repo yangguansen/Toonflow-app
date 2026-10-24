@@ -78,12 +78,13 @@ type TfPluginParams = {
   searchKeyword?: string;
 };
 
-export function isTfRouterProvider(provider: { id: string; apiUrl: string }) {
-  return provider.id.toLowerCase() === "tfrouter" && URL.canParse(provider.apiUrl)
+export function isTfRouterProvider(provider: { id: string; apiUrl?: string }) {
+  return provider.id.toLowerCase() === "tfrouter" && typeof provider.apiUrl === "string" && URL.canParse(provider.apiUrl)
     && new URL(provider.apiUrl).origin === "https://api.toonflow.net";
 }
 
 const client = axios.create({ baseURL: "https://api.toonflow.net" });
+const exploreClient = axios.create({ baseURL: "/api/explore" });
 
 export function getTfApiKey() {
   const provider = customProviders.value.find(isTfRouterProvider);
@@ -103,10 +104,6 @@ function responseData<T>(response: TfResponse<T>, fallback = "TF-Router 请求�
   if (!response || typeof response !== "object" || typeof response.code !== "number") throw new Error("TF-Router 响应格式不正确");
   if (response.code !== 200) throw new Error(response.message || fallback);
   return response.data;
-}
-
-function exploreOptions(options?: Pick<TfRequestOptions, "signal">) {
-  return getTfApiKey() ? requestOptions(options) : { signal: options?.signal, timeout: 20000 };
 }
 
 function isExploreUrl(value: unknown, allowEmpty = false): value is string {
@@ -139,7 +136,7 @@ export default {
   // cursor 首次省略，后续原样传回 nextCursor；服务端以 null 表示结束。
   async getExploreProjects(params: TfExploreParams, options?: Pick<TfRequestOptions, "signal">): Promise<TfExplorePage> {
     if (!Number.isSafeInteger(params.limit) || params.limit < 1 || params.limit > 50) throw new Error("每页数量必须为 1 至 50 的整数");
-    const { data } = await client.post<TfResponse<TfExplorePage>>("/v1/explore/getProjects", params, exploreOptions(options));
+    const { data } = await exploreClient.post<TfResponse<TfExplorePage>>("/projects", { body: params }, { signal: options?.signal, timeout: 20000 });
     const page = responseData(data, "加载探索项目失败");
     if (!page || !Array.isArray(page.list) || page.list.length > params.limit
       || (page.nextCursor !== null && (typeof page.nextCursor !== "string" || !page.nextCursor.trim()))) throw new Error("探索分页响应格式不正确");
@@ -152,7 +149,7 @@ export default {
 
   async getExploreProject(projectId: string, options?: Pick<TfRequestOptions, "signal">): Promise<TfExploreDetail> {
     validateExploreId(projectId);
-    const { data } = await client.post<TfResponse<TfExploreDetail>>("/v1/explore/getProject", { projectId }, exploreOptions(options));
+    const { data } = await exploreClient.post<TfResponse<TfExploreDetail>>("/project", { body: { projectId } }, { signal: options?.signal, timeout: 20000 });
     const project = responseData(data, "加载作品详情失败");
     validateExploreProject(project);
     if (project.id !== projectId || typeof project.description !== "string"
@@ -173,7 +170,7 @@ export default {
   // handles 与连线的 sourceHandle/targetHandle 保留源节点端口 ID；未提供 handles 时前端使用默认 target in/source out。
   async getExploreProcess(projectId: string, options?: Pick<TfRequestOptions, "signal">): Promise<TfExploreProcess> {
     validateExploreId(projectId);
-    const { data } = await client.post<TfResponse<TfExploreProcess>>("/v1/explore/getProcess", { projectId }, exploreOptions(options));
+    const { data } = await exploreClient.post<TfResponse<TfExploreProcess>>("/process", { body: { projectId } }, { signal: options?.signal, timeout: 20000 });
     const process = responseData(data, "加载制作过程失败");
     if (!process || !Array.isArray(process.canvases) || !process.canvases.length) throw new Error("制作过程响应格式不正确");
     const canvasIds = new Set<string>();
@@ -235,7 +232,7 @@ export default {
   // 下载包根目录即项目根目录，包含原始画布 JSON 与 assets 等全部依赖；URL 为短期有效的 HTTPS 签名地址。
   async getExploreDownload(projectId: string, options?: Pick<TfRequestOptions, "signal">): Promise<{ downloadUrl: string }> {
     validateExploreId(projectId);
-    const { data } = await client.post<TfResponse<{ downloadUrl: string }>>("/v1/explore/getDownload", { projectId }, exploreOptions(options));
+    const { data } = await exploreClient.post<TfResponse<{ downloadUrl: string }>>("/download", { body: { projectId } }, { signal: options?.signal, timeout: 20000 });
     const download = responseData(data, "获取项目下载地址失败");
     if (!isExploreUrl(download?.downloadUrl) || new URL(download.downloadUrl).protocol !== "https:") throw new Error("项目下载地址无效");
     return download;

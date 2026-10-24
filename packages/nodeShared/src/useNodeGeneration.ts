@@ -2,7 +2,7 @@ import { computed, ref, type Ref } from "vue";
 import { nodeTools, z } from "@toonflow/nodes-scaffold/nodeTools";
 import type { NodeOutputs } from "@toonflow/nodes-scaffold/values";
 
-export function useNodeGeneration(outputs: Readonly<Ref<NodeOutputs>>, cancel: () => void) {
+export function useNodeGeneration(outputs: Readonly<Ref<NodeOutputs>>, cancel?: () => void) {
   const status = ref<"idle" | "running" | "succeeded" | "failed">("idle");
   const error = ref("");
   const generating = computed(() => status.value === "running");
@@ -16,12 +16,14 @@ export function useNodeGeneration(outputs: Readonly<Ref<NodeOutputs>>, cancel: (
   });
   nodeTools.register({
     name: "cancelGeneration",
-    description: "请求停止当前后台生成；cancellationRequested 表示已发出停止请求，随后用 getGenerationStatus 查询终止状态。不会删除已有输出，不能保证供应商撤销任务或费用",
+    description: cancel
+      ? "请求停止当前后台生成；cancellationRequested 表示已发出停止请求，随后用 getGenerationStatus 查询终止状态。不会删除已有输出，不能保证供应商撤销任务或费用"
+      : "当前生成提交后不可取消；调用后 cancellationRequested 始终为 false，可用 getGenerationStatus 查询后台执行状态",
     parameters: z.strictObject({}),
     execute() {
-      const cancellationRequested = generating.value;
-      if (cancellationRequested) cancel();
-      return { ...getStatus(), cancellationRequested };
+      const cancellationRequested = generating.value && !!cancel;
+      if (generating.value && cancel) cancel();
+      return { ...getStatus(), cancellationRequested, cancelable: !!cancel };
     },
   });
 

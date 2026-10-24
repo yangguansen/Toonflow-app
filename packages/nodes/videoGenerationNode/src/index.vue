@@ -86,11 +86,12 @@
             <mediaPrice v-if="generationInput" :input="{ ...generationInput, mediaType: 'video' }" :supported="selectedModel?.supportsPrice === true" />
             <el-button
               class="sendButton"
-              :icon="generating ? IconPlayerStop : IconArrowUp"
-              :disabled="deleting || uploading || (!generating && (!generationPrompt || !selectedModel))"
-              :title="generating ? '停止生成' : '生成视频'"
-              :aria-label="generating ? '停止生成' : '生成视频'"
-              @click="generating ? generationController?.abort() : startGeneration().catch((error) => showNodeError(error, '视频生成失败'))" />
+              :icon="IconArrowUp"
+              :loading="generating"
+              :disabled="generating || deleting || uploading || (!generationPrompt || !selectedModel)"
+              :title="generating ? '视频正在后台生成' : '生成视频'"
+              :aria-label="generating ? '视频正在后台生成' : '生成视频'"
+              @click="startGeneration().catch((error) => showNodeError(error, '视频生成失败'))" />
           </div>
         </div>
       </el-card>
@@ -100,9 +101,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from "vue";
+import { computed, inject, nextTick, onMounted, onScopeDispose, ref, watch } from "vue";
 import { ElButton, ElCard, ElSelect, ElOption, ElOptionGroup, ElLoading, ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
-import { IconCameraAi, IconSparkles, IconArrowUp, IconPlayerStop, IconTransfer, IconMusic, IconLayersSubtract, IconScissors, IconMovie, IconPhotoScan, IconPlayerSkipBack, IconPlayerSkipForward } from "@tabler/icons-vue";
+import { IconCameraAi, IconSparkles, IconArrowUp, IconTransfer, IconMusic, IconLayersSubtract, IconScissors, IconMovie, IconPhotoScan, IconPlayerSkipBack, IconPlayerSkipForward } from "@tabler/icons-vue";
 import { nodeSkeleton, nodeTools, useNode, z, type NodeMediaModel, type NodeVideoRequest, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
 import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
 import { showNodeError } from "@toonflow/node-shared/showNodeError";
@@ -128,8 +129,9 @@ const vLoading = ElLoading.directive;
 const { id, node, nodeProps, nodeEvent, outputs, files, ai, updateNodeInternals } = useNode({
   label: "视频生成",
 });
+const flushCanvasSave = inject<(() => Promise<void>) | undefined>("flushCanvasSave", undefined);
 type PromptModel = NonNullable<InstanceType<typeof promptInput>["$props"]["modelValue"]>;
-const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; model: string; duration?: number; resolution: string; ratio: string; mode: string; generateAudio: boolean });
+const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; model: string; duration?: number; resolution: string; ratio: string; mode: string; generateAudio: boolean; taskId?: string });
 data.value.prompt ??= "";
 data.value.promptModel ??= [];
 data.value.model ??= "";
@@ -147,14 +149,13 @@ const deleting = ref(false);
 const player = ref<InstanceType<typeof videoPlayer>>();
 const actions = ref<InstanceType<typeof videoActions>>();
 const videoWidth = ref(0);
-let generationController: AbortController | undefined;
-const generationState = useNodeGeneration(outputs, () => generationController?.abort());
+const generationState = useNodeGeneration(outputs);
 const { generating } = generationState;
 let generation: Promise<void> | undefined;
 let modelsRequest: Promise<void> | undefined;
-// ACT: 供应商未声明视频比例范围，沿用界面的通用比例，具体支持范围由供应商校验。
-const ratioOptions = ["16:9", "9:16", "1:1", "4:3", "3:4"];
+const defaultRatioOptions = ["16:9", "9:16", "1:1", "4:3", "3:4"];
 const selectedModel = computed(() => models.value.find((item) => JSON.stringify([item.providerId, item.modelId]) === data.value.model));
+const ratioOptions = computed(() => selectedModel.value?.imageRatios?.length ? selectedModel.value.imageRatios : defaultRatioOptions);
 const selectedMode = computed(() => selectedModel.value?.mode?.find((item) => JSON.stringify(item) === data.value.mode) as NodeVideoRequest["mode"]);
 const frameMode = computed(() => ["startEndRequired", "endFrameOptional", "startFrameOptional"].includes(String(selectedMode.value)));
 const mediaCounts = computed(() => ({
@@ -203,7 +204,7 @@ watch([selectedModel, () => data.value.duration], ([choice]) => {
   if (!durations.includes(data.value.duration!)) data.value.duration = durations[0];
   const resolutions = getResolutions(choice, data.value.duration);
   if (!resolutions.includes(data.value.resolution)) data.value.resolution = resolutions[0] ?? "";
-  if (!ratioOptions.includes(data.value.ratio)) data.value.ratio = "9:16";
+  if (!ratioOptions.value.includes(data.value.ratio)) data.value.ratio = ratioOptions.value[0] ?? "9:16";
   if (choice.audio !== "optional") data.value.generateAudio = choice.audio === true;
 }, { flush: "sync" });
 const modelGroups = computed(() => groupNodeModels(models.value));
@@ -246,12 +247,12 @@ onMounted(() => {
   window.addEventListener("toonflow:plugin-installed", refreshProviderModels);
   window.addEventListener("toonflow:provider-config-changed", refreshProviderModels);
   void loadModels().catch(error => { if (!disposed) showNodeError(error, "模型读取失败"); });
+  void resumeGeneration();
 });
 onScopeDispose(() => {
   disposed = true;
   window.removeEventListener("toonflow:plugin-installed", refreshProviderModels);
   window.removeEventListener("toonflow:provider-config-changed", refreshProviderModels);
-  generationController?.abort();
 });
 
 async function refreshProviderModels(event: Event) {
@@ -317,25 +318,51 @@ async function startGeneration() {
   if (refList.value.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
   if (choice.mode?.length && !matchingModes.value.length) throw new Error("当前模型没有适合这些参考素材的生成模式，请更换模型或调整引用");
   const workspace = files.getWorkspaceFiles();
-  const controller = new AbortController();
-  generationController = controller;
-  // ACT: 工具立即返回，任务由节点持有，停止或卸载时取消。
+  const taskId = crypto.randomUUID();
+  data.value.taskId = taskId;
+  await flushCanvasSave?.();
+  // ACT: 视频提交后不可取消；节点卸载不中断服务端任务，关闭页面后由后台继续收尾。
   generation = generationState.run(() => workspace
     .list()
     .then(({ directory }) => {
-      controller.signal.throwIfAborted();
-      return ai.generateVideo({ ...input, directory }, controller.signal);
+      return ai.generateVideo({ ...input, directory, taskId });
     })
     .then(([result]) => {
-      controller.signal.throwIfAborted();
       if (!result) throw new Error("供应商未返回视频");
       outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
+      data.value.taskId = undefined;
     }))
-    .catch((error) => showNodeError(error, "视频生成失败"))
-    .finally(() => {
-      generationController = undefined;
-    });
+    .catch((error) => showNodeError(error, "视频生成失败"));
   return { status: "generating" };
+}
+
+async function resumeGeneration() {
+  if (generating.value || deleting.value) return;
+  const workspace = files.getWorkspaceFiles();
+  generation = generationState.run(async () => {
+    const { directory } = await workspace.list();
+    let taskId = data.value.taskId;
+    if (!taskId) {
+      const latest = await ai.getLatestMediaTask({ directory, nodeId: id, mediaType: "video" });
+      if (!latest || latest.status === "failed") return;
+      taskId = latest.taskId;
+      data.value.taskId = taskId;
+      if (latest.status === "succeeded") {
+        const result = latest.outputFiles.find(item => item.mediaType === "video");
+        if (!result) throw new Error("恢复任务缺少视频输出");
+        outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
+        data.value.taskId = undefined;
+        return;
+      }
+    }
+    const [result] = await ai.resumeVideo({ directory, taskId });
+    if (!result) throw new Error("服务端未返回视频结果");
+    outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
+    data.value.taskId = undefined;
+  })
+    .catch((error) => showNodeError(error, "视频任务恢复失败"));
+  await generation;
+  if (!disposed && !deleting.value) await loadModels();
 }
 
 nodeEvent.on("save", (reason) => {
@@ -343,8 +370,8 @@ nodeEvent.on("save", (reason) => {
 });
 nodeEvent.on("delete", async () => {
   if (uploading.value) throw new Error("视频正在替换，请稍后删除节点");
+  if (generating.value) throw new Error("视频正在后台生成，请等待完成后再删除节点");
   deleting.value = true;
-  generationController?.abort();
   try {
     await generation;
     await files.removeNodeFiles();
@@ -373,7 +400,7 @@ function getConfig() {
       generateAudio: data.value.generateAudio,
     },
     models: models.value,
-    ratios: ratioOptions,
+    ratios: ratioOptions.value,
     matchingModes: matchingModes.value,
   };
 }
@@ -398,7 +425,7 @@ nodeTools.register({
     modelId: z.string().min(1).optional(),
     duration: z.number().positive().optional(),
     resolution: z.string().min(1).optional(),
-    ratio: z.enum(ratioOptions).optional(),
+    ratio: z.string().min(1).max(16).optional(),
     mode: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
     generateAudio: z.boolean().optional(),
   }).refine((args) => (args.providerId === undefined) === (args.modelId === undefined), "providerId 与 modelId 必须同时提供"),
@@ -417,6 +444,8 @@ nodeTools.register({
     const resolutions = getResolutions(choice, duration);
     if (args.resolution !== undefined && !resolutions.includes(args.resolution)) throw new Error(`当前时长不支持分辨率 ${args.resolution}，可选：${resolutions.join("、")}`);
     const resolution = args.resolution ?? (resolutions.includes(data.value.resolution) ? data.value.resolution : resolutions[0] ?? "");
+    const ratios = choice.imageRatios?.length ? choice.imageRatios : defaultRatioOptions;
+    if (args.ratio !== undefined && !ratios.includes(args.ratio)) throw new Error(`当前模型不支持比例 ${args.ratio}，可选：${ratios.join("、")}`);
     if (args.mode !== undefined && !getMatchingModes(choice).some((item) => JSON.stringify(item) === JSON.stringify(args.mode))) throw new Error("所选模式不受当前模型支持或不适用于当前引用，请根据模型能力及已连接素材选择");
     if (args.generateAudio !== undefined && choice.audio !== "optional" && args.generateAudio !== (choice.audio === true)) throw new Error("当前模型不支持切换声音，请查看 getConfig 返回的 audio 能力");
     data.value.model = JSON.stringify([choice.providerId, choice.modelId]);
@@ -443,7 +472,7 @@ nodeTools.register({
 
 nodeTools.register({
   name: "generateVideo",
-  description: "启动此节点的后台视频生成，使用当前提示词、模型、模式、时长、分辨率、比例和参考素材；立即返回已开始，用 getGenerationStatus 查询完成结果，cancelGeneration 停止生成",
+  description: "启动此节点的后台视频生成，使用当前提示词、模型、模式、时长、分辨率、比例和参考素材；立即返回已开始，用 getGenerationStatus 查询完成结果，提交后不可取消",
   parameters: z.strictObject({}),
   execute(_args, { signal }) {
     signal?.throwIfAborted();

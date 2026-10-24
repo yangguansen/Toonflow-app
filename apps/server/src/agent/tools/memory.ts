@@ -23,7 +23,7 @@ export function createMemoryTool(): ToolDefinition {
     executionMode: "sequential",
     async execute(_id, params, signal) {
       signal?.throwIfAborted();
-      if (!isMemoryEnabled()) throw new Error("本地记忆已关闭，请遵循用户的设置，不再读取或保存记忆");
+      if (!await isMemoryEnabled()) throw new Error("本地记忆已关闭，请遵循用户的设置，不再读取或保存记忆");
       const args = parameters.parse(params);
       if (args.action === "save" && (args.content === undefined || args.revision === undefined)) {
         throw new Error("保存记忆需要提供 content 和最近读取的 revision");

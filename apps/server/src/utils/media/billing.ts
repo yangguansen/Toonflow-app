@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { ProviderBalance, ProviderPrice, ProviderPriceRequest } from "@toonflow/providers";
 import conf from "@/utils/conf";
 import { getMediaProvider, loadMediaProviderSource } from "@/utils/media/provider";
+import { withProviderSecrets } from "@/utils/config/providerSecrets";
 
 type RuntimeProvider = Awaited<ReturnType<typeof loadMediaProviderSource>>;
 type BalanceSnapshot = { accountId: string; balance: ProviderBalance | null; revision: number };
@@ -17,7 +18,11 @@ type Account = BalanceSnapshot & {
 
 const unitSchema = z.string().trim().min(1).max(64);
 // ACT: 已安装的旧供应商仍可返回数值报价，统一转换为展示文本。
-const priceSchema = z.object({ price: z.string().trim().min(1), tips: z.string() }).or(
+const priceSchema = z.object({
+  price: z.string().trim().min(1),
+  tips: z.string(),
+  costUsd: z.number().finite().nonnegative().optional(),
+}).or(
   z.object({ amount: z.number().finite().nonnegative(), unit: unitSchema })
     .transform(({ amount, unit }) => ({ price: `${amount} ${unit}`, tips: "以实际扣费为准" })),
 );
@@ -118,7 +123,10 @@ export async function getProviderBalance(providerId: string, apiKey?: string): P
     return 'export default { id: "tfRouter", label: "TF-router", rules: [], models: [] };';
   });
   const configs = conf.get("settings", {}).mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-  const provider = await loadMediaProviderSource(source, { ...configs?.[providerId], ...(apiKey === undefined ? {} : { apiKey }) });
+  const provider = await loadMediaProviderSource(source, {
+    ...withProviderSecrets(providerId, configs?.[providerId]),
+    ...(apiKey === undefined ? {} : { apiKey }),
+  });
   const account = getAccount(provider);
   if (account.provider && account.provider.sourceRevision !== provider.sourceRevision) account.epoch++;
   account.provider = provider;

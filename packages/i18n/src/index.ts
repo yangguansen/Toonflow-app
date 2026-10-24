@@ -26,14 +26,8 @@ export type Locale = "zh-CN" | "zh-TW" | "en" | "ja" | "ru" | "vi" | "th" | "ko"
   | "id" | "ms" | "fil" | "bn" | "ur" | "ta" | "te" | "mr" | "pa" | "ar" | "fa" | "tr";
 export interface MessageDescriptor { id: string; values?: Record<string, unknown> }
 export const supportedLocales: { code: Locale; name: string }[] = [
-  { code: "zh-CN", name: "简体中文" }, { code: "zh-TW", name: "繁體中文" },
-  { code: "en", name: "English" }, { code: "ja", name: "日本語" },
-  { code: "ru", name: "Русский" }, { code: "vi", name: "Tiếng Việt" },
-  { code: "th", name: "ไทย" }, { code: "ko", name: "한국어" }, { code: "hi", name: "हिन्दी" },
-  { code: "id", name: "Bahasa Indonesia" }, { code: "ms", name: "Bahasa Melayu" }, { code: "fil", name: "Filipino" },
-  { code: "bn", name: "বাংলা" }, { code: "ur", name: "اردو" }, { code: "ta", name: "தமிழ்" },
-  { code: "te", name: "తెలుగు" }, { code: "mr", name: "मराठी" }, { code: "pa", name: "ਪੰਜਾਬੀ" },
-  { code: "ar", name: "العربية" }, { code: "fa", name: "فارسی" }, { code: "tr", name: "Türkçe" },
+  { code: "zh-CN", name: "简体中文" },
+  { code: "en", name: "English" },
 ];
 const catalogs: Record<string, Record<string, string>> = { "zh-TW": zhTw, en, ja, ru, vi, th, ko, hi, id, ms, fil, bn, ur, ta, te, mr, pa, ar, fa, tr };
 let activeLocale: Locale = "zh-CN";
@@ -46,11 +40,7 @@ export function normalizeLocale(value: unknown): Locale | undefined {
   try { language = new Intl.Locale(value.trim().replaceAll("_", "-")); }
   catch { return; }
   const script = language.maximize().script;
-  if (language.language === "zh") {
-    if (script === "Hans") return "zh-CN";
-    if (script === "Hant") return "zh-TW";
-    return;
-  }
+  if (language.language === "zh") return "zh-CN";
   const base = language.language === "tl" ? "fil" : language.language === "in" ? "id" : language.language;
   const locale = supportedLocales.find(item => item.code === base)?.code;
   // ACT: 每种新增语言只提供一种文字体系；pa-Arab/pa-PK 等不能误用 Gurmukhi 译文。

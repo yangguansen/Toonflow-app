@@ -15,6 +15,7 @@ interface ProviderModel {
   id: string;
   label: string;
   type: ModelType;
+  [key: string]: unknown;
   think?: boolean;
   mode?: (ImageMode | VideoMode)[];
   associationSkills?: string;
@@ -55,6 +56,21 @@ type MediaInput =
 
 type MediaAsset = MediaInput & { mediaType: "image" | "video" | "audio" };
 
+/** 单次媒体生成完成后，供应商上报的实际上游用量。 */
+interface ProviderUsage {
+  /** 上游实际扣费，单位美元。 */
+  costUsd: number;
+  /** 上游任务或生成编号，用于对账。 */
+  generationId?: string;
+  /** 是否使用用户自带的供应商密钥。 */
+  isByok?: boolean;
+}
+
+/** 异步供应商在提交成功后立即上报的任务标识。 */
+interface ProviderTask {
+  jobId: string;
+}
+
 type MediaImageInfo = { width: number; height: number; format: string };
 type MediaImageResizeOptions = { width?: number; height?: number; format?: "jpeg" | "png" | "webp"; quality?: number };
 
@@ -79,6 +95,10 @@ interface FfmpegRequiredError extends Error {
 
 interface ProviderTools {
   fetch: typeof globalThis.fetch;
+  /** 供应商拿到实际结算数据后回报宿主；不支持成本回传的供应商无需调用。 */
+  reportUsage?(usage: ProviderUsage): void;
+  /** 异步供应商提交成功后立即回报远端任务编号，供宿主持久化和恢复。 */
+  reportTask?(task: ProviderTask): void | Promise<void>;
   /** 提取供应商错误正文中的可读原因，并隐藏配置中的密钥和 URL 查询参数。 */
   errorMessage(value: unknown): string;
   hash: typeof Bun.hash;
@@ -227,6 +247,8 @@ interface ProviderDefinition<TRules extends readonly ProviderFormRule[] = readon
   generateImage?: GenerateMedia<ImageRequest, ProviderConfig<TRules>>;
   generateVideo?: GenerateMedia<VideoRequest, ProviderConfig<TRules>>;
   generateAudio?: GenerateMedia<AudioRequest, ProviderConfig<TRules>>;
+  /** 恢复已提交的视频任务，只查询远端任务和下载结果，不重新提交生成请求。 */
+  resumeVideo?: (this: ProviderContext<ProviderConfig<TRules>>, jobId: string) => Promise<MediaAsset[]>;
   /** 可选的供应商媒体预处理；未实现时保持原请求。 */
   processMedia?: (this: ProviderContext<ProviderConfig<TRules>>, request: ImageRequest | VideoRequest | AudioRequest) => Promise<ImageRequest | VideoRequest | AudioRequest>;
 }
@@ -235,6 +257,8 @@ interface ProviderDefinition<TRules extends readonly ProviderFormRule[] = readon
 interface ProviderPrice {
   price: string;
   tips: string;
+  /** 结构化上游预估成本；仅用于宿主内部计费，不直接展示给用户。 */
+  costUsd?: number;
 }
 
 /** 估价专用素材元信息；不包含 base64、二进制、URL 或本地路径。未知字段省略，不能视作 0。 */

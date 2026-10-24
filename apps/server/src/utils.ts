@@ -10,6 +10,7 @@ import * as mediaBilling from "@/utils/media/billing";
 import * as ffmpeg from "@/utils/ffmpeg";
 import * as pluginInstall from "@/utils/plugins/install";
 import conf, { cleanNodeMenuSettings, removeLegacySettings } from "@/utils/conf";
+import { redactSettings } from "@/utils/conf/secrets";
 import * as ai from "@/utils/ai";
 import * as plugins from "@/utils/plugins/tools";
 import * as nodePlugins from "@/utils/plugins/nodes";
@@ -31,6 +32,14 @@ import * as teams from "@/utils/teams";
 import * as a2aSettings from "@/agent/a2a/settings";
 import * as personalization from "@/utils/personalization";
 import * as mentionFiles from "@/agent/mentionFiles";
+import * as authContext from "@/utils/auth/context";
+import * as authCookies from "@/utils/auth/cookies";
+import * as authSession from "@/utils/auth/session";
+import * as authSupabase from "@/utils/auth/supabase";
+import * as providerSecrets from "@/utils/config/providerSecrets";
+import * as userSettings from "@/utils/auth/userSettings";
+import * as projects from "@/utils/projects";
+import * as credits from "@/utils/credits";
 
 export default {
   assets,
@@ -47,6 +56,7 @@ export default {
   conf,
   cleanNodeMenuSettings,
   removeLegacySettings,
+  redactSettings,
   ai,
   plugins,
   nodePlugins,
@@ -68,4 +78,12 @@ export default {
   a2aSettings,
   personalization,
   mentionFiles,
+  authContext,
+  authCookies,
+  authSession,
+  authSupabase,
+  providerSecrets,
+  userSettings,
+  projects,
+  credits,
 };

@@ -80,7 +80,7 @@ export async function snapshotMentions(cwd: string, mentions: AgentMention[], sa
       if (previous && !media) { result.push(mention); continue; }
       if (!media && mention.source.kind !== "asset") { result.push(mention); continue; }
       const globalAsset = mention.source.kind === "asset" && !previous;
-      const root = globalAsset ? await getAssetsDirectory() : cwd;
+      const root = globalAsset ? await getAssetsDirectory(cwd) : cwd;
       const relativePath = globalAsset && mention.source.kind === "asset" ? mention.source.path : media!.url;
       let source: string;
       try {

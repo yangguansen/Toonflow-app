@@ -39,9 +39,10 @@
     </el-card>
     <div class="menuExtension"><slot /></div>
   </panel>
-  <panel v-if="visibleProviderBalances.length" class="balanceMenuPanel" position="top-right">
-    <div class="balanceList" tabindex="0" aria-label="供应商余额">
-      <el-card v-for="item in visibleProviderBalances" :key="item.id" class="balanceCard" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
+  <panel v-if="authState.authenticated && (creditSummary?.enabled || creditError || authState.isAdmin && visibleProviderBalances.length)" class="balanceMenuPanel" position="top-right">
+    <div class="balanceList" tabindex="0" aria-label="账户余额">
+      <creditBalance v-if="creditSummary?.enabled || creditError" />
+      <el-card v-for="item in authState.isAdmin ? visibleProviderBalances : []" :key="item.id" class="balanceCard" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
         <el-popover v-if="item.id === 'tfRouter'" :visible="balanceVisible" @update:visible="value => { if (!rechargeVisible) balanceVisible = value; }" trigger="click" placement="bottom-end" :width="360" :showArrow="false">
           <template #reference>
             <el-button class="balanceTrigger" text :aria-busy="item.loading" :title="item.error || 'TF-Router 剩余可用余额'" aria-label="TF-Router 余额与充值">
@@ -90,7 +91,10 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { getCanvasAssetDirectories, isCanvasFile } from "@/pages/workspace/canvasFile";
 import tfAccount from "@/components/settings/tfAccount.vue";
+import creditBalance from "@/components/credits/creditBalance.vue";
 import { providerBalances, tfBalanceApiKey, saveTfMediaApiKey, refreshProviderBalance } from "@/lib/providerBilling";
+import { authState } from "@/lib/auth";
+import { creditError, creditSummary, refreshCredits } from "@/lib/credits";
 
 const props = defineProps<{
   directory?: string;
@@ -99,9 +103,14 @@ const props = defineProps<{
   flushSave: (action?: () => Promise<void>) => Promise<void>;
 }>();
 const workspaceStore = useWorkspaceStore();
+if (authState.authenticated) void refreshCredits();
+function handleCreditsChanged() {
+  if (authState.authenticated) void refreshCredits();
+}
+window.addEventListener("toonflow:credits-changed", handleCreditsChanged);
 const balanceVisible = ref(false);
 const rechargeVisible = ref(false);
-const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 6 }));
+const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 0 }));
 const visibleProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "tfRouter" || (item.balance && !item.error)));
 const workspaceName = computed(() => workspaceStore.project?.name || "未命名工作区");
 const projectNameDraft = ref("");
@@ -112,7 +121,7 @@ watch([() => workspaceStore.project?.directory, workspaceName], () => {
 function saveProjectName(event: Event) {
   if (event instanceof KeyboardEvent && event.isComposing) return;
   const project = workspaceStore.project;
-  if (project) workspaceStore.renameProject(project.directory, projectNameDraft.value);
+  if (project) workspaceStore.renameProject(project.id, projectNameDraft.value);
   projectNameDraft.value = workspaceName.value;
 }
 
@@ -182,7 +191,10 @@ watch([searchQuery, treeEntries], async () => { await nextTick(); canvasTree.val
 watch(canvasListVisible, opened => {
   if (!opened) { treeRequest++; loadingTree.value = false; itemMenu.value?.handleClose(); cancelFolder(); }
 });
-onBeforeUnmount(() => treeController.abort());
+onBeforeUnmount(() => {
+  treeController.abort();
+  window.removeEventListener("toonflow:credits-changed", handleCreditsChanged);
+});
 
 function treeChildren(path: string): CanvasEntry[] {
   let entries = treeEntries.value;

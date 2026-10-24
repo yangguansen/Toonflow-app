@@ -6,11 +6,12 @@ import { buildSystemPrompt } from "@/agent/runtime/prompt";
 import { loadAgentSkills } from "@/agent/skills";
 import { resolveWorkspacePath } from "@/utils/workspace/files";
 import { isMemoryEnabled, readDocument } from "@/utils/personalization";
-import conf from "@/utils/conf";
 import { getRuntimePlatform } from "@/lib/platform";
+import { getCurrentAuthUser } from "@/utils/auth/context";
+import { readUserSettings } from "@/utils/auth/userSettings";
 
 export async function createAgentResources(cwd: string, tools: ToolDefinition[], settings = SettingsManager.inMemory(), instructions = "") {
-  const savedPrompt = conf.get("settings", {}).agentSystemPrompt;
+  const savedPrompt = (await readUserSettings(getCurrentAuthUser())).agentSystemPrompt;
   const systemPrompt = typeof savedPrompt === "string" ? savedPrompt : undefined;
   const agentDir = join(cwd, ".agent");
   const { path: agentsPath } = await resolveWorkspacePath(cwd, "AGENTS.md");
@@ -18,7 +19,7 @@ export async function createAgentResources(cwd: string, tools: ToolDefinition[],
     if (error.code === "ENOENT") return "";
     throw new Error(t`读取工作区 AGENTS.md 失败：${error.message}`, { cause: error });
   });
-  const [globalAgents, memory] = await Promise.all([readDocument("agents"), isMemoryEnabled() ? readDocument("memory") : { content: "" }]);
+  const [globalAgents, memory] = await Promise.all([readDocument("agents"), await isMemoryEnabled() ? readDocument("memory") : { content: "" }]);
   const skills = loadAgentSkills(cwd);
   const sdkSkills = tools.some(tool => tool.name === "skillOperator")
     ? { ...skills, skills: skills.skills.map(skill => ({ ...skill, disableModelInvocation: true })) }

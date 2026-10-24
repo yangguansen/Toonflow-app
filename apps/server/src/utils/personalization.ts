@@ -2,8 +2,9 @@ import { t, translateMessage } from "@/lib/i18n";
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, realpath } from "@toonflow/file";
 import { dirname, join } from "node:path";
-import conf from "@/utils/conf";
 import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
+import { getAccountDirectory, getCurrentAuthUser } from "@/utils/auth/context";
+import { readUserSettings } from "@/utils/auth/userSettings";
 
 export type PersonalizationDocument = "memory" | "agents";
 
@@ -11,8 +12,8 @@ const documents = { memory: "memories/memory.md", agents: "AGENTS.md" };
 const labels = { memory: "全局记忆", agents: "全局 AGENTS.md" };
 export const maxDocumentLength = 20000;
 
-export function isMemoryEnabled() {
-  const value = conf.get("settings", {}).personalization;
+export async function isMemoryEnabled() {
+  const value = (await readUserSettings(getCurrentAuthUser())).personalization;
   return !value || typeof value !== "object" || Array.isArray(value) || (value as Record<string, unknown>).memoryEnabled !== false;
 }
 
@@ -22,7 +23,7 @@ function result(content: string) {
 
 async function documentPath(document: PersonalizationDocument) {
   if (!Object.hasOwn(documents, document)) throw Object.assign(new Error("个性化文档类型无效"), { status: 400 });
-  const directory = dirname(conf.path);
+  const directory = getAccountDirectory(getCurrentAuthUser().id);
   await mkdir(directory, { recursive: true });
   const directories = [directory, ...(document === "memory" ? [join(directory, "memories")] : [])];
   for (const path of directories) {

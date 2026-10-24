@@ -12,8 +12,10 @@ import { getRuntimePlatform } from "@/lib/platform";
 import initializePlugins from "@/utils/plugins/initialize";
 import { languageRequest, resolveRequestLocale, runWithLocale, setLocaleFallback, translateError, translateMessage } from "@/lib/i18n";
 import { detectLocale, normalizeLocale } from "@toonflow/i18n";
+import { assertAdmin, runWithAuthUser } from "@/utils/auth/context";
+import { resolveRequestAuth } from "@/utils/auth/session";
 
-const autoInstallProviders = ["tfRouter.ts", "apiMart.ts", "metaso.ts", "compshare.ts"];
+const autoInstallProviders = ["openrouterMedia.ts"];
 
 export async function createApp({
   webRoot,
@@ -90,12 +92,53 @@ export async function createApp({
     await buildRoute();
     app.use(logger("dev"));
   }
+  app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
   app.use(cors());
   app.use(languageRequest);
   app.use("/a2a", express.json({ limit: "2mb" }));
   app.use(["/api/workspaces/files/write", "/api/assets/save"], express.raw({ type: "application/octet-stream", limit: "100mb" }));
   app.use(express.json({ limit: "100mb" }));
   app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+  app.use("/api", async (req, res, next) => {
+    if (req.method === "OPTIONS" || req.path.startsWith("/auth/")) return next();
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      const expectedOrigin = process.env.TOONFLOW_PUBLIC_URL
+        ? new URL(process.env.TOONFLOW_PUBLIC_URL).origin
+        : `${req.protocol}://${req.get("host")}`;
+      const origin = req.get("origin");
+      if ((origin && origin !== expectedOrigin) || req.get("sec-fetch-site") === "cross-site") {
+        res.status(403).json(errorFromCause(Object.assign(new Error("请求来源无效"), { status: 403 })));
+        return;
+      }
+    }
+    try {
+      const user = await resolveRequestAuth(req, res);
+      if (!user) {
+        res.status(401).json(errorFromCause(Object.assign(new Error("请先登录"), { status: 401 })));
+        return;
+      }
+      req.authUser = user;
+      runWithAuthUser(req.authUser, next);
+    } catch (error) {
+      next(error);
+    }
+  });
+  app.use("/api", (req, _res, next) => {
+    const managedPath = req.path.startsWith("/providers")
+      || req.path.startsWith("/nodes")
+      || req.path.startsWith("/tools")
+      || req.path.startsWith("/skills")
+      || req.path.startsWith("/agents")
+      || req.path.startsWith("/ext")
+      || req.path.startsWith("/plugins")
+      || req.path.startsWith("/ffmpeg")
+      || req.path.startsWith("/mcp/servers")
+      || req.path.startsWith("/mcp/status")
+      || req.path.startsWith("/mcp/skill");
+    const pluginExport = req.path.startsWith("/plugins");
+    if ((pluginExport || !["GET", "HEAD", "OPTIONS"].includes(req.method) && managedPath)) assertAdmin(req);
+    next();
+  });
   app.use("/api/desktop", desktopRequest);
 
   const { default: initializeProviderModels } = await import("@/utils/ai/initialize");

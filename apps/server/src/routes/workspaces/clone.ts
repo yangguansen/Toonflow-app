@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { lstat, mkdir, mkdtemp, realpath, rm } from "@toonflow/file";
-import { dirname, join } from "node:path";
+import { lstat, mkdir, readdir, realpath, rm } from "@toonflow/file";
+import { dirname } from "node:path";
 import { z } from "zod";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
@@ -26,6 +26,8 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
   let created: Awaited<ReturnType<typeof lstat>> | undefined;
   let release: (() => void) | undefined;
   try {
+    const entries = await readdir(parent);
+    if (entries.length) throw Object.assign(new Error("克隆项目需要空项目目录"), { status: 409 });
     // ACT: 复用内存 ZIP 校验，压缩包和解压内容各限 512 MB、2 万条目；更大项目需改为流式暂存与解压。
     const maxBytes = 512 * 1024 * 1024;
     const bytes = await u.workspaceDownload.downloadPublicFile(input.url, { signal, maxBytes, label: "项目包", httpsOnly: true });
@@ -56,9 +58,7 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
     });
     if (!hasCanvas) throw Object.assign(new Error("项目包必须包含有效的 Toonflow 画布 JSON 文件"), { status: 400 });
     signal.throwIfAborted();
-    let name = input.name.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").replace(/[. ]+$/, "").slice(0, 80);
-    if (!name || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) name = "Toonflow";
-    directory = await mkdtemp(join(parent, `${name}-`));
+    directory = parent;
     created = await lstat(directory);
     if (!u.workspaceFile.isWithin(parent, await realpath(directory))) throw new Error("项目下载目录超出所选位置");
     release = u.workspaceFile.lockWorkspaceFiles([directory]);
@@ -77,7 +77,7 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
         const current = await lstat(directory);
         const actual = await realpath(directory);
         if (current.isSymbolicLink() || current.ino !== created.ino || current.dev !== created.dev
-          || actual !== directory || !u.workspaceFile.isWithin(parent, actual) || directory === parent) throw new Error("项目目录已变更，未自动删除");
+          || actual !== directory || !u.workspaceFile.isWithin(parent, actual)) throw new Error("项目目录已变更，未自动删除");
         await rm(directory, { recursive: true });
       } catch (cleanupError) {
         throw new Error(`项目克隆失败，未能清理下载目录 ${directory}：${cleanupError instanceof Error ? cleanupError.message : "请检查目录权限"}`, { cause: error });

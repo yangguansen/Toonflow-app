@@ -28,12 +28,19 @@ export type NodeImageRequest = {
   size?: string;
 };
 export type NodeImageResult = { path: string; mimeType: string; mediaType: "image" };
-export type NodeVideoRequest = Omit<MediaGenerationRequest, "size"> & { directory: string; outputDirectory: string };
+export type NodeVideoRequest = Omit<MediaGenerationRequest, "size"> & { directory: string; outputDirectory: string; taskId?: string };
+export type NodeVideoResumeRequest = Pick<NodeVideoRequest, "directory"> & { taskId: string };
 export type NodeVideoResult = { path: string; mimeType: string; mediaType: "video" };
 export type NodeMediaPriceRequest = (NodeImageRequest & { mediaType: "image" }) | (NodeVideoRequest & { mediaType: "video" }) | (NodeAudioRequest & { mediaType: "audio" });
 export type NodeMediaPrice = { price: string; tips: string };
 export type NodeAudioRequest = Pick<MediaGenerationRequest, "providerId" | "modelId" | "prompt" | "images" | "audios" | "voice" | "speed" | "volume" | "pitch" | "language" | "format" | "sampleRate"> & { directory: string; outputDirectory: string };
 export type NodeAudioResult = { path: string; mimeType: string; mediaType: "audio" };
+export type NodeLatestMediaTask = {
+  taskId: string;
+  status: "running" | "succeeded" | "failed";
+  outputFiles: (NodeImageResult | NodeVideoResult | NodeAudioResult)[];
+  errorCode: string | null;
+};
 export type NodeAiRequest = {
   providerId: string;
   modelId: string;
@@ -353,7 +360,7 @@ export function useNodeAi() {
   async function generateMedia<T extends "image" | "video" | "audio">(mediaType: T, input: NodeImageRequest | NodeVideoRequest | NodeAudioRequest, signal?: AbortSignal) {
     const waitingSignal = requestSignal(signal);
     waitingSignal.throwIfAborted();
-    const taskId = crypto.randomUUID();
+    const taskId = "taskId" in input && typeof input.taskId === "string" && input.taskId ? input.taskId : crypto.randomUUID();
     // 提交使用独立超时；用户取消立即结束等待，提交收尾后再取消，避免先取消后登记的竞态。
     const submitted = fetch("/api/ai/media/generate", {
       method: "POST",
@@ -374,7 +381,31 @@ export function useNodeAi() {
     } finally {
       waitingSignal.removeEventListener("abort", abort);
     }
-    return await mediaTasks.wait(input.directory, taskId, waitingSignal) as { path: string; mimeType: string; mediaType: T }[];
+    return await waitMediaTask(input.directory, taskId, waitingSignal) as { path: string; mimeType: string; mediaType: T }[];
+  }
+
+  async function waitMediaTask(directory: string, taskId: string, signal?: AbortSignal) {
+    const waitingSignal = requestSignal(signal);
+    try {
+      return await mediaTasks.wait(directory, taskId, waitingSignal);
+    } finally {
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("toonflow:credits-changed"));
+    }
+  }
+
+  async function getLatestMediaTask(
+    input: { directory: string; nodeId: string; mediaType: "image" | "video" | "audio" },
+    signal?: AbortSignal,
+  ) {
+    const data = await fetch("/api/ai/media/tasks/latest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      body: JSON.stringify(input),
+      signal: requestSignal(signal),
+    }).then(readResult<NodeLatestMediaTask | null>);
+    if (data === null) return null;
+    if (!data || typeof data.taskId !== "string") throw new Error("最近任务响应无效");
+    return data;
   }
 
   function generateImage(input: NodeImageRequest, signal?: AbortSignal) {
@@ -383,6 +414,10 @@ export function useNodeAi() {
 
   function generateVideo(input: NodeVideoRequest, signal?: AbortSignal) {
     return generateMedia("video", input, signal);
+  }
+
+  function resumeVideo(input: NodeVideoResumeRequest, signal?: AbortSignal) {
+    return waitMediaTask(input.directory, input.taskId, signal) as Promise<NodeVideoResult[]>;
   }
 
   function generateAudio(input: NodeAudioRequest, signal?: AbortSignal) {
@@ -439,5 +474,5 @@ export function useNodeAi() {
     return { text, ...(reasoning ? { reasoning } : {}) };
   }
 
-  return { getModels, getMediaModels, getMediaPrice, generateImage, generateVideo, generateAudio, generate };
+  return { getModels, getMediaModels, getMediaPrice, generateImage, generateVideo, resumeVideo, getLatestMediaTask, generateAudio, generate };
 }

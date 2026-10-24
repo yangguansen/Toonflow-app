@@ -93,8 +93,8 @@ export async function storedMentionOutput(directory: string, canvasId: string, n
   return outputId === undefined ? mentionNodeOutputs(node) : createCanvasMention(node, canvasId, outputId, path => readMentionText(directory, path));
 }
 
-export async function selectMentionAsset(relativePath: string): Promise<AgentMention> {
-  const directory = await u.assets.getAssetsDirectory();
+export async function selectMentionAsset(relativePath: string, workspaceDirectory?: string): Promise<AgentMention> {
+  const directory = await u.assets.getAssetsDirectory(workspaceDirectory);
   const { path } = await u.workspaceFile.resolveWorkspacePath(directory, relativePath);
   const info = await stat(path);
   const type = mentionAssetType(relativePath);

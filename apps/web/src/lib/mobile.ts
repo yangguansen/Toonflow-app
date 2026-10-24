@@ -27,11 +27,18 @@ let connectionTimer: ReturnType<typeof setTimeout> | undefined;
 export async function refreshMobileConnection() {
   if (connectionRequest) return connectionRequest;
   clearTimeout(connectionTimer);
+  const canQueryConnection = isMobile || isDesktop;
   connectionRequest = (async () => {
     const request = new AbortController();
     const requestTimeout = setTimeout(() => request.abort(), 8000);
     try {
       let data: MobileConnection = { mode: "local" };
+      if (!canQueryConnection) {
+        deviceConnectionSupported.value = false;
+        deviceHubEnabled.value = false;
+        mobileConnection.value = data;
+        return data;
+      }
       if (deviceConnectionSupported.value) {
         const response = await fetch("/api/connection/connection", { cache: "no-store", signal: request.signal });
         if (response.status === 404 && !isMobile && !isDesktop) deviceConnectionSupported.value = false;
@@ -57,7 +64,7 @@ export async function refreshMobileConnection() {
     } finally {
       clearTimeout(requestTimeout);
       connectionRequest = undefined;
-      if (!document.hidden) connectionTimer = setTimeout(() => { void refreshMobileConnection().catch(() => {}); }, 5000);
+      if (!document.hidden && canQueryConnection) connectionTimer = setTimeout(() => { void refreshMobileConnection().catch(() => {}); }, 5000);
     }
   })();
   return connectionRequest;

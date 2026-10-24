@@ -4,6 +4,7 @@ import type { ProviderBalance } from "@toonflow/providers";
 import { getTfApiKey } from "@/lib/tf";
 import { saveSettings, settings } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
+import { openEventStream } from "@/lib/eventStream";
 
 type BalanceSnapshot = { accountId: string; balance: ProviderBalance | null; revision: number };
 
@@ -89,7 +90,7 @@ export function useProviderBalances() {
   const workspaceStore = useWorkspaceStore();
   let providers: BalanceProvider[] = [];
   let request: AbortController | undefined;
-  const connections = new Map<string, EventSource>();
+  const connections = new Map<string, { close(): void }>();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let subscriptionTimer: ReturnType<typeof setTimeout> | undefined;
   let reconnectDelay = 1000;
@@ -123,20 +124,22 @@ export function useProviderBalances() {
     for (const [group, connection] of connections) if (!groups.includes(group)) { connection.close(); connections.delete(group); }
     for (const group of groups) {
       if (connections.has(group)) continue;
-      const connection = new EventSource(`/api/ai/media/balanceEvents?accountIds=${encodeURIComponent(group)}`);
+      const connection = openEventStream(`/api/ai/media/balanceEvents?accountIds=${encodeURIComponent(group)}`, {
+        onOpen: () => { if (connections.get(group) === current) reconnectDelay = 1000; },
+        onMessage: message => {
+          if (connections.get(group) !== current) return;
+          try { applySnapshot(JSON.parse(message)); }
+          catch { /* 下一次窗口显示重新校准无效通知。 */ }
+        },
+        onError: () => {
+          if (connections.get(group) !== current) return;
+          current.close();
+          connections.delete(group);
+          retryConnection();
+        },
+      });
+      const current = connection;
       connections.set(group, connection);
-      connection.onopen = () => { if (connections.get(group) === connection) reconnectDelay = 1000; };
-      connection.onmessage = event => {
-        if (connections.get(group) !== connection) return;
-        try { applySnapshot(JSON.parse(event.data)); }
-        catch { /* 下一次窗口显示重新校准无效通知。 */ }
-      };
-      connection.onerror = () => {
-        if (connections.get(group) !== connection) return;
-        connection.close();
-        connections.delete(group);
-        retryConnection();
-      };
     }
   }
 
@@ -232,4 +235,3 @@ export function useProviderBalances() {
     document.removeEventListener("visibilitychange", scheduleRefresh);
   });
 }
-

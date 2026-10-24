@@ -18,7 +18,11 @@ export default Router().post("/", validateFields({
   const cwd = await u.workspace.resolveWorkspace(req, directory);
   if (taskId) {
     if (req.aborted || res.destroyed) return;
-    u.mediaTasks.start(cwd, taskId, mediaType, parsed.data);
+    await u.mediaTasks.start(cwd, taskId, mediaType, parsed.data);
+    if (req.aborted || res.destroyed) {
+      u.mediaTasks.cancel(cwd, [taskId]);
+      return;
+    }
     res.set("Cache-Control", "no-store").json(success({ taskId }));
     return;
   }

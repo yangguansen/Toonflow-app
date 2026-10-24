@@ -128,6 +128,11 @@ export async function loadSettings() {
   settingsReady = true;
 }
 
+export function resetSettings() {
+  settingsReady = false;
+  settings.value = {};
+}
+
 export function saveSettings(update?: (current: Record<string, unknown>) => Record<string, unknown> | undefined) {
   // ACT: 队列内读取最新配置再计算变更，确认成功后发布；仅协调当前页面的保存。
   const saving = saveQueue.then(async () => {

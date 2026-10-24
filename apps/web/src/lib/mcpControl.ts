@@ -129,7 +129,13 @@ export function useMcpControl() {
             callSignal.throwIfAborted();
             // ACT: 切换项目会取消旧画布调用；当前打开项目命令属于应用层。
             calls.delete(request.callId);
-            await workspaceStore.openProject(directory, directory, callSignal);
+            let target = workspaceStore.projectList.find(project => project.directory === directory);
+            if (!target) {
+              await workspaceStore.loadProjectList(callSignal);
+              target = workspaceStore.projectList.find(project => project.directory === directory);
+            }
+            if (!target) throw new Error("项目不存在或无权访问");
+            await workspaceStore.openProject(target.id, callSignal);
             const openedDirectory = workspaceStore.project?.directory;
             calls.set(request.callId, controller);
             callSignal.throwIfAborted();
