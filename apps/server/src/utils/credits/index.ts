@@ -1,4 +1,5 @@
 import type { GeneratedMedia } from "@toonflow/tools-scaffold/runtime";
+import Stripe from "stripe";
 import { databaseRequest, hasSupabaseServiceRoleKey, serviceDatabaseRequest, type AuthUser } from "@/utils/auth/supabase";
 
 type CreditRpcResult = {
@@ -18,6 +19,20 @@ type UsageRow = {
   charged_microcredits: number | string;
   created_at: string;
   finished_at: string | null;
+};
+
+type PurchaseRow = {
+  package_id: string;
+  amount_cents: number;
+  currency: string;
+  credits_microcredits: number | string;
+  paid_at: string;
+};
+
+export type CreditPackage = {
+  id: string;
+  amountCents: number;
+  credits: number;
 };
 
 export type AiUsageRecord = {
@@ -54,6 +69,14 @@ export type RecoverableVideoJob = {
   recoveryAttempts: number;
 };
 
+export const creditPackages = [
+  { id: "credits10000", amountCents: 1000, credits: 10000 },
+  { id: "credits20000", amountCents: 2000, credits: 20000 },
+  { id: "credits50000", amountCents: 5000, credits: 50000 },
+] as const satisfies readonly CreditPackage[];
+
+let stripeClient: Stripe | undefined;
+
 function positiveNumber(name: string, fallback: number) {
   const value = Number(process.env[name] ?? fallback);
   if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} 必须为正数`);
@@ -66,6 +89,21 @@ function creditConfig() {
     creditUsd: positiveNumber("TOONFLOW_CREDIT_USD", 0.001),
     markupRate: positiveNumber("TOONFLOW_CREDIT_MARKUP_RATE", 1.3),
   };
+}
+
+function stripeConfigured() {
+  return hasSupabaseServiceRoleKey() && !!process.env.STRIPE_SECRET_KEY?.trim() && !!process.env.STRIPE_WEBHOOK_SECRET?.trim();
+}
+
+function stripe() {
+  const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!secretKey) throw Object.assign(new Error("Stripe 支付尚未配置"), { status: 503, code: "STRIPE_NOT_CONFIGURED" });
+  stripeClient ??= new Stripe(secretKey);
+  return stripeClient;
+}
+
+function creditPackage(packageId: unknown): CreditPackage | undefined {
+  return typeof packageId === "string" ? creditPackages.find(item => item.id === packageId) : undefined;
 }
 
 function microcredits(value: unknown) {
@@ -84,6 +122,12 @@ function rpcError(error: unknown): never {
   if (message.includes("AI_CREDITS_USER_NOT_FOUND")) {
     throw Object.assign(new Error("目标用户不存在"), { status: 404, code: "USER_NOT_FOUND" });
   }
+  if (message.includes("AI_CREDITS_INVALID_PURCHASE")) {
+    throw Object.assign(new Error("积分购买参数无效"), { status: 400, code: "INVALID_PURCHASE" });
+  }
+  if (message.includes("AI_CREDITS_SERVICE_REQUIRED")) {
+    throw Object.assign(new Error("Stripe 积分入账仅允许服务端调用"), { status: 403, code: "SERVICE_ROLE_REQUIRED" });
+  }
   if (message.includes("AI_CREDITS_PROJECT_NOT_FOUND")) {
     throw Object.assign(new Error("项目不存在或无权访问"), { status: 403, code: "PROJECT_NOT_FOUND" });
   }
@@ -91,7 +135,7 @@ function rpcError(error: unknown): never {
     throw Object.assign(new Error("该生成任务已记账，请勿重复提交"), { status: 409, code: "USAGE_EXISTS" });
   }
   if (/Supabase 请求失败（404）/.test(message)) {
-    throw Object.assign(new Error("积分账本尚未初始化，请先执行 supabase/migrations/creditLedger.sql"), { status: 503, code: "CREDITS_NOT_CONFIGURED" });
+    throw Object.assign(new Error("积分账本尚未初始化，请执行 supabase/migrations/creditLedger.sql 和 stripeCredits.sql"), { status: 503, code: "CREDITS_NOT_CONFIGURED" });
   }
   throw error;
 }
@@ -223,7 +267,12 @@ export async function grantAiCredits(user: AuthUser, input: {
 }
 
 export async function readCreditSummary(user: AuthUser) {
-  if (!creditConfig().enabled) return { enabled: false, balanceCredits: 0 };
+  if (!creditConfig().enabled) return {
+    enabled: false,
+    purchaseEnabled: false,
+    balanceCredits: 0,
+    packages: creditPackages,
+  };
   await callCreditRpc(user, "release_stale_ai_usage", { p_max_age_seconds: 86400 })
     .catch(error => console.warn("清理过期积分预扣失败：", error));
   const response = await databaseRequest(user.accessToken,
@@ -231,7 +280,112 @@ export async function readCreditSummary(user: AuthUser) {
   const row = (await response.json() as Array<{ balance_microcredits?: number | string }>)[0];
   return {
     enabled: true,
+    purchaseEnabled: stripeConfigured(),
     balanceCredits: creditsToNumber(row?.balance_microcredits),
+    packages: creditPackages,
+  };
+}
+
+export async function createCreditCheckout(user: AuthUser, packageId: string, origin: string) {
+  const selectedPackage = creditPackage(packageId);
+  if (!selectedPackage) throw Object.assign(new Error("积分套餐不存在"), { status: 400, code: "CREDIT_PACKAGE_NOT_FOUND" });
+  if (!stripeConfigured()) throw Object.assign(new Error("Stripe 支付尚未配置"), { status: 503, code: "STRIPE_NOT_CONFIGURED" });
+
+  const publicUrl = process.env.TOONFLOW_PUBLIC_URL?.trim() || origin;
+  let webUrl: URL;
+  try {
+    webUrl = new URL(publicUrl);
+  } catch {
+    throw Object.assign(new Error("TOONFLOW_PUBLIC_URL 配置无效"), { status: 503, code: "PUBLIC_URL_INVALID" });
+  }
+  if (!["http:", "https:"].includes(webUrl.protocol)) {
+    throw Object.assign(new Error("TOONFLOW_PUBLIC_URL 必须使用 HTTP(S)"), { status: 503, code: "PUBLIC_URL_INVALID" });
+  }
+
+  const appRoot = `${webUrl.origin}${webUrl.pathname.replace(/\/$/, "")}`;
+  const session = await stripe().checkout.sessions.create({
+    mode: "payment",
+    client_reference_id: user.id,
+    customer_email: user.email || undefined,
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: "usd",
+        unit_amount: selectedPackage.amountCents,
+        product_data: {
+          name: `${selectedPackage.credits.toLocaleString("en-US")} Toonflow credits`,
+        },
+      },
+    }],
+    metadata: {
+      ownerId: user.id,
+      packageId: selectedPackage.id,
+    },
+    payment_intent_data: {
+      metadata: {
+        ownerId: user.id,
+        packageId: selectedPackage.id,
+      },
+    },
+    success_url: `${appRoot}/#/home?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appRoot}/#/home?checkout=cancelled`,
+  });
+  if (!session.url) throw Object.assign(new Error("Stripe 未返回支付地址"), { status: 502, code: "STRIPE_CHECKOUT_FAILED" });
+  return { url: session.url };
+}
+
+export async function handleCreditWebhook(rawBody: Buffer, signature: string) {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  if (!webhookSecret) throw Object.assign(new Error("Stripe Webhook 尚未配置"), { status: 503, code: "STRIPE_NOT_CONFIGURED" });
+
+  let event: Stripe.Event;
+  try {
+    event = await stripe().webhooks.constructEventAsync(rawBody, signature, webhookSecret);
+  } catch {
+    throw Object.assign(new Error("Stripe Webhook 签名无效"), { status: 400, code: "STRIPE_SIGNATURE_INVALID" });
+  }
+
+  if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") {
+    return { processed: false, pending: false };
+  }
+
+  const session = event.data.object as Stripe.Checkout.Session;
+  const ownerId = session.metadata?.ownerId;
+  const selectedPackage = creditPackage(session.metadata?.packageId);
+  if (session.mode !== "payment" || !ownerId || !selectedPackage) return { processed: false, pending: false };
+  if (session.payment_status !== "paid") return { processed: false, pending: true };
+  if (session.client_reference_id !== ownerId || session.amount_total !== selectedPackage.amountCents || session.currency !== "usd") {
+    throw Object.assign(new Error("Stripe 支付信息与积分套餐不一致"), { status: 422, code: "STRIPE_PURCHASE_MISMATCH" });
+  }
+
+  const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+  const result = await callServiceRpc<{ credited?: unknown; balanceMicrocredits?: unknown }>("grant_credit_purchase_service", {
+    p_owner_id: ownerId,
+    p_stripe_checkout_session_id: session.id,
+    p_stripe_payment_intent_id: paymentIntentId ?? null,
+    p_package_id: selectedPackage.id,
+    p_amount_cents: selectedPackage.amountCents,
+    p_currency: session.currency,
+    p_credits_microcredits: selectedPackage.credits * 1_000_000,
+  });
+  return {
+    processed: true,
+    credited: result.credited === true,
+    balanceCredits: creditsToNumber(microcredits(result.balanceMicrocredits)),
+  };
+}
+
+export async function readCreditPurchaseStatus(user: AuthUser, sessionId: string) {
+  const response = await databaseRequest(user.accessToken,
+    `credit_purchases?owner_id=eq.${encodeURIComponent(user.id)}&stripe_checkout_session_id=eq.${encodeURIComponent(sessionId)}&select=package_id,amount_cents,currency,credits_microcredits,paid_at&limit=1`);
+  const row = (await response.json() as PurchaseRow[])[0];
+  return {
+    processed: !!row,
+    packageId: row?.package_id ?? null,
+    amountCents: row?.amount_cents ?? null,
+    currency: row?.currency ?? null,
+    credits: row ? creditsToNumber(row.credits_microcredits) : 0,
+    paidAt: row?.paid_at ?? null,
   };
 }
 

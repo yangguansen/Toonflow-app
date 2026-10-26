@@ -43,14 +43,14 @@
     <div class="balanceList" tabindex="0" aria-label="账户余额">
       <creditBalance v-if="creditSummary?.enabled || creditError" />
       <el-card v-for="item in authState.isAdmin ? visibleProviderBalances : []" :key="item.id" class="balanceCard" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
-        <el-popover v-if="item.id === 'tfRouter'" :visible="balanceVisible" @update:visible="value => { if (!rechargeVisible) balanceVisible = value; }" trigger="click" placement="bottom-end" :width="360" :showArrow="false">
+        <el-popover v-if="item.id === 'tfRouter'" v-model:visible="balanceVisible" trigger="click" placement="bottom-end" :width="360" :showArrow="false">
           <template #reference>
-            <el-button class="balanceTrigger" text :aria-busy="item.loading" :title="item.error || 'TF-Router 剩余可用余额'" aria-label="TF-Router 余额与充值">
+            <el-button class="balanceTrigger" text :aria-busy="item.loading" :title="item.error || 'TF-Router 剩余可用余额'" aria-label="TF-Router 余额">
               <span class="providerLabel">{{ item.label }}</span>
               <span>{{ item.balance ? `${balanceFormat.format(Math.min(item.balance.balance, item.balance.keyBalance ?? Infinity))} ${item.balance.unit}` : '—' }}</span>
             </el-button>
           </template>
-          <tfAccount v-if="balanceVisible" :apiKey="tfBalanceApiKey" :visible="balanceVisible" :saveApiKey="saveTfMediaApiKey" @rechargeVisibleChange="rechargeVisible = $event" />
+          <tfAccount v-if="balanceVisible" :apiKey="tfBalanceApiKey" :visible="balanceVisible" :saveApiKey="saveTfMediaApiKey" />
         </el-popover>
         <el-button v-else class="balanceTrigger" text :loading="item.loading" :title="item.error || `点击刷新 ${item.label} 余额`" :aria-label="`刷新 ${item.label} 余额`" @click="refreshProviderBalance(item.id)">
           <span class="providerLabel">{{ item.label }}</span>
@@ -109,7 +109,6 @@ function handleCreditsChanged() {
 }
 window.addEventListener("toonflow:credits-changed", handleCreditsChanged);
 const balanceVisible = ref(false);
-const rechargeVisible = ref(false);
 const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 0 }));
 const visibleProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "tfRouter" || (item.balance && !item.error)));
 const workspaceName = computed(() => workspaceStore.project?.name || "未命名工作区");

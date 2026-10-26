@@ -48,7 +48,6 @@
   ],
   "重试": [
     "apps/web/src/main.ts",
-    "apps/web/src/components/settings/tfRechargeDialog.vue",
     "apps/web/src/components/settings/panels/developer/systemPromptDialog.vue",
     "apps/web/src/components/settings/panels/general/nodeMenuSettings.vue",
     "apps/web/src/components/settings/panels/pluginMarket/index.vue",
@@ -116,119 +115,6 @@
   ],
   "常规配置": [
     "apps/web/src/components/settings/index.vue"
-  ],
-  "TF-Router 充值": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "充值套餐": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "自定义金额": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "充值金额（元）": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "输入充值金额": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "支付方式": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "微信支付": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "支付宝": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "微信支付二维码": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "二维码图片加载失败": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "使用微信扫码支付": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "请在浏览器中完成支付宝支付": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "打开支付页面": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "订单已创建，但接口未返回有效的支付链接": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "订单号": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "完成支付后，关闭此充值弹窗以刷新账户余额。": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "关闭": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/index.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/a2aSettingsDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/agentEditorDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
-    "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue",
-    "apps/web/src/components/settings/panels/about.vue",
-    "apps/web/src/components/languageSelect.vue",
-    "apps/web/src/components/agent/menu.vue",
-    "apps/web/src/components/modelPopover.vue",
-    "apps/web/src/pages/workspace/panels/document/components/editorTab.vue",
-    "apps/web/src/pages/workspace/panels/document/components/workspaceSearch.vue"
-  ],
-  "取消": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue",
-    "apps/web/src/components/settings/panels/developer/index.vue",
-    "apps/web/src/components/settings/panels/developer/systemPromptDialog.vue",
-    "apps/web/src/components/settings/panels/deviceLink.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/index.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/agentConnectDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/pluginConfigDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
-    "apps/web/src/components/settings/panels/languageModel/index.vue",
-    "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue",
-    "apps/web/src/components/settings/panels/languageModel/addProviderDialog.vue",
-    "apps/web/src/components/settings/panels/mediaModel/index.vue",
-    "apps/web/src/components/settings/panels/mediaModel/addCustomProviderDialog.vue",
-    "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
-    "apps/web/src/components/settings/panels/mediaModel/modelEditorDialog.vue",
-    "apps/web/src/components/settings/panels/personalization.vue",
-    "apps/web/src/components/agent/menu.vue",
-    "apps/web/src/components/agent/conversation/messageInput.vue",
-    "apps/web/src/components/agent/conversation/messageList.vue",
-    "apps/web/src/lib/desktopProtocol.ts",
-    "apps/web/src/lib/i18n.ts",
-    "apps/web/src/pages/home/index.vue",
-    "apps/web/src/pages/home/workspacePicker.vue",
-    "apps/web/src/pages/workspace/panels/document/components/fileTree.vue",
-    "apps/web/src/pages/workspace/panels/document/components/openWithDialog.vue",
-    "apps/web/src/pages/workspace/panels/document/components/workspaceSearch.vue",
-    "apps/web/src/pages/workspace/panels/document/components/extView.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue",
-    "apps/web/src/pages/workspace/components/workspaceMenu.vue"
-  ],
-  "获取支付二维码": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "前往支付宝支付": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "查看余额": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "读取充值套餐失败，请重试": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
-  ],
-  "创建充值订单失败，请重试": [
-    "apps/web/src/components/settings/tfRechargeDialog.vue"
   ],
   "开发者工具": [
     "apps/web/src/components/settings/panels/developer/index.vue"
@@ -384,6 +270,42 @@
     "apps/web/src/pages/workspace/panels/document/components/fileTree.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue"
+  ],
+  "取消": [
+    "apps/web/src/components/settings/panels/developer/index.vue",
+    "apps/web/src/components/settings/panels/developer/systemPromptDialog.vue",
+    "apps/web/src/components/settings/panels/deviceLink.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/index.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/agentConnectDialog.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/pluginConfigDialog.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
+    "apps/web/src/components/settings/panels/languageModel/index.vue",
+    "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue",
+    "apps/web/src/components/settings/panels/languageModel/addProviderDialog.vue",
+    "apps/web/src/components/settings/panels/mediaModel/index.vue",
+    "apps/web/src/components/settings/panels/mediaModel/addCustomProviderDialog.vue",
+    "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
+    "apps/web/src/components/settings/panels/mediaModel/modelEditorDialog.vue",
+    "apps/web/src/components/settings/panels/personalization.vue",
+    "apps/web/src/components/agent/menu.vue",
+    "apps/web/src/components/agent/conversation/messageInput.vue",
+    "apps/web/src/components/agent/conversation/messageList.vue",
+    "apps/web/src/components/credits/creditRechargeDialog.vue",
+    "apps/web/src/lib/desktopProtocol.ts",
+    "apps/web/src/lib/i18n.ts",
+    "apps/web/src/pages/home/index.vue",
+    "apps/web/src/pages/home/workspacePicker.vue",
+    "apps/web/src/pages/workspace/panels/document/components/fileTree.vue",
+    "apps/web/src/pages/workspace/panels/document/components/openWithDialog.vue",
+    "apps/web/src/pages/workspace/panels/document/components/workspaceSearch.vue",
+    "apps/web/src/pages/workspace/panels/document/components/extView.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue",
+    "apps/web/src/pages/workspace/components/workspaceMenu.vue"
   ],
   "删除 {0}": [
     "apps/web/src/components/settings/panels/developer/index.vue",
@@ -1323,6 +1245,19 @@
   ],
   "Agent Card 地址": [
     "apps/web/src/components/settings/panels/pluginMarket/index.vue"
+  ],
+  "关闭": [
+    "apps/web/src/components/settings/panels/pluginMarket/index.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/a2aSettingsDialog.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/agentEditorDialog.vue",
+    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
+    "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue",
+    "apps/web/src/components/settings/panels/about.vue",
+    "apps/web/src/components/languageSelect.vue",
+    "apps/web/src/components/agent/menu.vue",
+    "apps/web/src/components/modelPopover.vue",
+    "apps/web/src/pages/workspace/panels/document/components/editorTab.vue",
+    "apps/web/src/pages/workspace/panels/document/components/workspaceSearch.vue"
   ],
   "收藏成功": [
     "apps/web/src/components/settings/panels/pluginMarket/index.vue"
@@ -2475,18 +2410,21 @@
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
     "apps/web/src/components/settings/panels/mediaModel/modelEditorDialog.vue",
     "apps/web/src/components/agent/mentionMenu.vue",
+    "apps/web/src/components/credits/creditBalance.vue",
     "apps/server/src/utils/media/generation.ts"
   ],
   "视频": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
     "apps/web/src/components/settings/panels/mediaModel/modelEditorDialog.vue",
     "apps/web/src/components/agent/mentionMenu.vue",
+    "apps/web/src/components/credits/creditBalance.vue",
     "apps/server/src/utils/media/generation.ts"
   ],
   "音频": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
     "apps/web/src/components/settings/panels/mediaModel/modelEditorDialog.vue",
     "apps/web/src/components/agent/mentionMenu.vue",
+    "apps/web/src/components/credits/creditBalance.vue",
     "apps/server/src/utils/media/generation.ts"
   ],
   "文本": [
@@ -3099,12 +3037,10 @@
     "apps/web/src/components/settings/panels/ui.vue"
   ],
   "账户余额": [
-    "apps/web/src/components/settings/tfAccount.vue"
+    "apps/web/src/components/settings/tfAccount.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue"
   ],
   "刷新余额": [
-    "apps/web/src/components/settings/tfAccount.vue"
-  ],
-  "充值": [
     "apps/web/src/components/settings/tfAccount.vue"
   ],
   "填写API Key开始使用官方供应商": [
@@ -3123,9 +3059,6 @@
     "apps/web/src/components/settings/tfAccount.vue"
   ],
   "累计消费": [
-    "apps/web/src/components/settings/tfAccount.vue"
-  ],
-  "累计充值": [
     "apps/web/src/components/settings/tfAccount.vue"
   ],
   "余额查询失败，请重试": [
@@ -3953,6 +3886,59 @@
     "apps/web/src/components/updateBox.vue",
     "apps/web/src/pages/hello/index.vue"
   ],
+  "购买积分": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue",
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "选择套餐后将前往 Stripe 安全支付页面。": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "积分套餐": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "$1 = {0} 积分": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "{0} 积分": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue",
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "购买 {0} 积分，价格 {1}": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "支付地址无效": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "创建支付页面失败，请重试": [
+    "apps/web/src/components/credits/creditRechargeDialog.vue"
+  ],
+  "查看积分余额与用量": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "账户积分": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "刷新积分": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "最近 AI 用量": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "暂无 AI 用量记录": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "待结算": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "已结算": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "已退回": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
+  "预扣 {0} 积分": [
+    "apps/web/src/components/credits/creditBalance.vue"
+  ],
   "成组": [
     "apps/web/src/lib/canvasShortcuts.ts"
   ],
@@ -4048,6 +4034,22 @@
   ],
   "小键盘 =": [
     "apps/web/src/lib/canvasShortcuts.ts"
+  ],
+  "读取积分余额失败": [
+    "apps/web/src/lib/credits.ts"
+  ],
+  "读取积分用量失败": [
+    "apps/web/src/lib/credits.ts"
+  ],
+  "读取积分信息失败": [
+    "apps/web/src/lib/credits.ts"
+  ],
+  "创建支付页面失败": [
+    "apps/web/src/lib/credits.ts"
+  ],
+  "查询支付结果失败": [
+    "apps/web/src/lib/credits.ts",
+    "apps/web/src/pages/home/index.vue"
   ],
   "请先选择工作目录": [
     "apps/web/src/lib/workspaceFiles.ts",
@@ -4345,7 +4347,8 @@
   ],
   "项目不存在或无权访问": [
     "apps/web/src/lib/mcpControl.ts",
-    "apps/server/src/utils/projects/index.ts"
+    "apps/server/src/utils/projects/index.ts",
+    "apps/server/src/utils/credits/index.ts"
   ],
   "工作区打开已取消": [
     "apps/web/src/lib/mcpControl.ts"
@@ -4420,27 +4423,6 @@
     "apps/web/src/lib/tf.ts"
   ],
   "赞助商响应格式不正确": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "订单号不能为空": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "订单查询响应格式不正确": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "充值套餐响应格式不正确": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "充值套餐 ID 必须为正整数或 -1": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "请选择微信或支付宝支付": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "自定义充值金额必须在 0.01 至 50000 之间": [
-    "apps/web/src/lib/tf.ts"
-  ],
-  "支付响应格式不正确": [
     "apps/web/src/lib/tf.ts"
   ],
   "页码必须为正整数": [
@@ -4573,6 +4555,18 @@
     "apps/web/src/pages/home/index.vue"
   ],
   "从一句话开始，搭建你的创作工作流…": [
+    "apps/web/src/pages/home/index.vue"
+  ],
+  "已取消支付": [
+    "apps/web/src/pages/home/index.vue"
+  ],
+  "支付已完成，请在积分面板刷新余额": [
+    "apps/web/src/pages/home/index.vue"
+  ],
+  "{0} 积分已到账": [
+    "apps/web/src/pages/home/index.vue"
+  ],
+  "支付已完成，积分到账可能稍有延迟，请稍后刷新": [
     "apps/web/src/pages/home/index.vue"
   ],
   "添加附件失败，请重试": [
@@ -5687,13 +5681,10 @@
     "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue"
   ],
-  "供应商余额": [
-    "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue"
-  ],
   "TF-Router 剩余可用余额": [
     "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue"
   ],
-  "TF-Router 余额与充值": [
+  "TF-Router 余额": [
     "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue"
   ],
   "点击刷新 {0} 余额": [
@@ -6228,6 +6219,9 @@
     "apps/server/src/utils/auth/context.ts"
   ],
   "SUPABASE_URL 必须是有效的 HTTP(S) 地址": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "SUPABASE_SERVICE_ROLE_KEY 尚未配置": [
     "apps/server/src/utils/auth/supabase.ts"
   ],
   "无法连接 Supabase，请检查网络后重试": [
@@ -7234,6 +7228,15 @@
   "临时对话已关闭": [
     "apps/server/src/utils/singleAgent/index.ts"
   ],
+  "DeepSeek 未返回可用模型，保留已有模型列表": [
+    "apps/server/src/utils/ai/initialize.ts"
+  ],
+  "DeepSeek 模型列表刷新失败，保留已有模型：": [
+    "apps/server/src/utils/ai/initialize.ts"
+  ],
+  "DEEPSEEK_API_KEY 未配置，默认语言模型不可用": [
+    "apps/server/src/utils/ai/initialize.ts"
+  ],
   "接口值不能包含首尾空白": [
     "apps/server/src/utils/ai/index.ts"
   ],
@@ -7471,6 +7474,57 @@
   ],
   "素材查询及游标关闭失败": [
     "apps/server/src/utils/assets/index.ts"
+  ],
+  "Stripe 支付尚未配置": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "积分不足，请先充值后再试": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "仅管理员可以发放积分": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "目标用户不存在": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "积分购买参数无效": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "Stripe 积分入账仅允许服务端调用": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "该生成任务已记账，请勿重复提交": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "积分账本尚未初始化，请执行 supabase/migrations/creditLedger.sql 和 stripeCredits.sql": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "上游费用无效": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "清理过期积分预扣失败：": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "积分套餐不存在": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "TOONFLOW_PUBLIC_URL 配置无效": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "TOONFLOW_PUBLIC_URL 必须使用 HTTP(S)": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "Stripe 未返回支付地址": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "Stripe Webhook 尚未配置": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "Stripe Webhook 签名无效": [
+    "apps/server/src/utils/credits/index.ts"
+  ],
+  "Stripe 支付信息与积分套餐不一致": [
+    "apps/server/src/utils/credits/index.ts"
   ],
   "音频输入必须是 Uint8Array": [
     "apps/server/src/utils/media/audioProcessor.ts"
@@ -7724,7 +7778,16 @@
   "读取参考媒体信息超时，请稍后重试": [
     "apps/server/src/utils/media/generation.ts"
   ],
+  "按上游价格估算；生成完成后按实际费用结算，失败不扣积分。": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
+  "供应商未返回生成结果": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
   "请输入生成提示词": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
+  "生成任务尚未完成积分预扣": [
     "apps/server/src/utils/media/generation.ts"
   ],
   "此供应商不支持{0}生成": [
@@ -7733,7 +7796,16 @@
   "请先在媒体模型设置中配置供应商 API Key": [
     "apps/server/src/utils/media/generation.ts"
   ],
-  "供应商未返回生成结果": [
+  "当前模型无法预估积分消耗": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
+  "当前模型或参数组合无法预估积分消耗": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
+  "生成任务缺少上游结算费用": [
+    "apps/server/src/utils/media/generation.ts"
+  ],
+  "积分释放失败：": [
     "apps/server/src/utils/media/generation.ts"
   ],
   "以实际扣费为准": [
@@ -7748,7 +7820,25 @@
   "余额账户已失效，请刷新余额": [
     "apps/server/src/utils/media/billing.ts"
   ],
-  "生成任务因页面长时间未连接而停止": [
+  "恢复任务缺少项目目录": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "当前供应商不支持恢复视频任务": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "视频任务恢复未返回结果": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "视频任务结算失败，等待下次恢复重试": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "SUPABASE_SERVICE_ROLE_KEY 未配置，视频任务自动恢复未启用": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "视频任务恢复扫描失败：": [
+    "apps/server/src/utils/media/recovery.ts"
+  ],
+  "生成任务已超过最长执行时间": [
     "apps/server/src/utils/media/tasks.ts"
   ],
   "生成任务已存在，请勿重复提交": [
@@ -7758,7 +7848,8 @@
     "apps/server/src/utils/media/tasks.ts"
   ],
   "生成任务不存在或已过期": [
-    "apps/server/src/utils/media/tasks.ts"
+    "apps/server/src/utils/media/tasks.ts",
+    "apps/server/src/routes/ai/media/tasks/status.ts"
   ],
   "生成已取消": [
     "apps/server/src/utils/media/tasks.ts"
@@ -8575,6 +8666,12 @@
   "模型上下文不能超过 8 MB": [
     "apps/server/src/routes/ai/generate.ts"
   ],
+  "媒体生成失败，请重新发起": [
+    "apps/server/src/routes/ai/media/tasks/status.ts"
+  ],
+  "视频任务提交后不可取消，请等待后台生成完成": [
+    "apps/server/src/routes/ai/media/tasks/cancel.ts"
+  ],
   "请在桌面端或服务器本机读取技能": [
     "apps/server/src/routes/skills/read.ts"
   ],
@@ -8625,6 +8722,15 @@
   ],
   "SKILL.md 必须包含合法 YAML、与原技能相同的字符串 name，以及非空且不超过 1024 字符的 description": [
     "apps/server/src/routes/skills/save.ts"
+  ],
+  "支付页面已创建": [
+    "apps/server/src/routes/credits/checkout.ts"
+  ],
+  "积分已发放": [
+    "apps/server/src/routes/credits/grant.ts"
+  ],
+  "Stripe Webhook 请求无效": [
+    "apps/server/src/routes/credits/webhook.ts"
   ],
   "更新事务标识无效": [
     "apps/desktop/src/update/windowsUpdater.ts"

@@ -4,9 +4,9 @@ declare global {
   namespace Express {
     interface Request {
       authUser?: AuthUser;
+      stripeRawBody?: Buffer;
     }
   }
 }
 
 export {};
-

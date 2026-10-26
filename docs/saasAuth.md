@@ -13,7 +13,7 @@
 
 `SUPABASE_URL`、`SUPABASE_ANON_KEY` 只由 Express 使用。OAuth PKCE 交换、token 刷新和 Supabase 请求都在服务端完成，浏览器只保存 `/api` 路径下的 HttpOnly 会话 Cookie，不接触 Supabase key 或用户 token。
 
-`SUPABASE_SERVICE_ROLE_KEY` 仅用于容器启动后的视频任务恢复 Worker。它拥有绕过 RLS 的权限，必须只放在服务端环境变量中，不能进入前端、日志或镜像。
+`SUPABASE_SERVICE_ROLE_KEY` 仅用于服务端视频任务恢复和 Stripe Webhook 积分入账。它拥有绕过 RLS 的权限，必须只放在服务端环境变量中，不能进入前端、日志或镜像。
 
 ## Provider 密钥
 
@@ -65,7 +65,18 @@ TOONFLOW_CREDIT_MARKUP_RATE=1.3
 
 每笔任务按换算结果四舍五入为整积分。例如 `59.0` 保留为 `59`，`59.8` 计为 `60`。
 
-支付渠道尚未接入。管理员可通过 `POST /api/credits/grant` 发放积分：
+Stripe 支付使用 Hosted Checkout，按 `$1 = 1000 credits` 提供固定套餐。浏览器只提交套餐 ID，积分由已验证的 Stripe Webhook 通过专用服务端 RPC 入账。需要配置：
+
+```env
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+```
+
+Webhook 地址为 `/api/credits/webhook`，监听 `checkout.session.completed` 和 `checkout.session.async_payment_succeeded`。
+
+复用现有 `SUPABASE_SERVICE_ROLE_KEY`，不新增数据库角色。购买入账 RPC 只授权给现有 `service_role`，并在函数内再次校验调用角色；该密钥仍具有绕过 RLS 的全局权限，因此只能留在服务端环境变量中。
+
+管理员仍可通过 `POST /api/credits/grant` 发放积分：
 
 ```json
 {

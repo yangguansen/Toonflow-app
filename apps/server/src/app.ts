@@ -97,10 +97,16 @@ export async function createApp({
   app.use(languageRequest);
   app.use("/a2a", express.json({ limit: "2mb" }));
   app.use(["/api/workspaces/files/write", "/api/assets/save"], express.raw({ type: "application/octet-stream", limit: "100mb" }));
-  app.use(express.json({ limit: "100mb" }));
+  app.use(express.json({
+    limit: "100mb",
+    verify: (req, _res, buffer) => {
+      const request = req as Request;
+      if (request.originalUrl.split("?")[0] === "/api/credits/webhook") request.stripeRawBody = Buffer.from(buffer);
+    },
+  }));
   app.use(express.urlencoded({ extended: true, limit: "100mb" }));
   app.use("/api", async (req, res, next) => {
-    if (req.method === "OPTIONS" || req.path.startsWith("/auth/")) return next();
+    if (req.method === "OPTIONS" || req.path.startsWith("/auth/") || req.path === "/credits/webhook") return next();
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
       const expectedOrigin = process.env.TOONFLOW_PUBLIC_URL
         ? new URL(process.env.TOONFLOW_PUBLIC_URL).origin

@@ -10,7 +10,6 @@
       </div>
       <div class="accountActions">
         <el-button text circle :icon="IconRefresh" :loading="loading" :disabled="!apiKey" aria-label="刷新余额" title="刷新余额" @click="refresh" />
-        <el-button size="small" :icon="IconCreditCard" :disabled="!apiKey" @click="openRecharge">充值</el-button>
       </div>
     </div>
     <div v-if="!apiKey" class="accountSetup">
@@ -45,20 +44,15 @@
         <el-text size="small" type="info">累计消费</el-text>
         <span>{{ numberFormat.format(balance.totalConsumption) }} {{ balance.unit }}</span>
       </div>
-      <div v-if="balance.totalRecharge !== undefined" class="accountMetric">
-        <el-text size="small" type="info">累计充值</el-text>
-        <span>{{ numberFormat.format(balance.totalRecharge) }} {{ balance.unit }}</span>
-      </div>
     </div>
-    <component :is="rechargeDialog" v-model="rechargeVisible" :apiKey="apiKey" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { locale } from "@toonflow/i18n/vue";
-import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef, watch, type Component } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import axios from "axios";
-import { IconCreditCard, IconExternalLink, IconRefresh } from "@tabler/icons-vue";
+import { IconExternalLink, IconRefresh } from "@tabler/icons-vue";
 import type { ProviderBalance } from "@toonflow/providers";
 import { getProviderBalance, providerBalances } from "@/lib/providerBilling";
 
@@ -67,9 +61,6 @@ const props = withDefaults(defineProps<{
   visible?: boolean;
   saveApiKey: (key: string) => Promise<void>;
 }>(), { visible: true });
-const emit = defineEmits<{ rechargeVisibleChange: [visible: boolean] }>();
-const rechargeDialog = shallowRef<Component>();
-const rechargeVisible = ref(false);
 const apiKey = computed(() =>
   props.apiKey
     .trim()
@@ -87,14 +78,6 @@ const saving = ref(false);
 const setupError = ref("");
 const numberFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 6 }));
 let controller: AbortController | undefined;
-let rechargeKey = "";
-
-function openRecharge() {
-  if (!apiKey.value || !props.visible) return;
-  rechargeKey = apiKey.value;
-  rechargeDialog.value ??= defineAsyncComponent(() => import("./tfRechargeDialog.vue"));
-  rechargeVisible.value = true;
-}
 
 async function submitKey() {
   const key = draftKey.value.trim();
@@ -141,7 +124,6 @@ async function refresh() {
 watch(
   [apiKey, () => props.visible],
   () => {
-    rechargeVisible.value = false;
     accountId.value = "";
     balance.value = undefined;
     draftKey.value = "";
@@ -150,13 +132,8 @@ watch(
   },
   { immediate: true }
 );
-watch(rechargeVisible, (isOpen, wasOpen) => {
-  emit("rechargeVisibleChange", isOpen);
-  if (wasOpen && !isOpen && rechargeKey === apiKey.value && props.visible) void refresh();
-}, { flush: "sync" });
 onBeforeUnmount(() => {
   controller?.abort();
-  emit("rechargeVisibleChange", false);
 });
 </script>
 

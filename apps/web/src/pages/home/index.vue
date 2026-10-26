@@ -124,7 +124,7 @@ import { locale, translate } from "@toonflow/i18n/vue";
 import axios from "axios";
 import { storeToRefs } from "pinia";
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type InputInstance, type ScrollbarInstance } from "element-plus";
 import { getReadableFileMimeType, readableFileAccept } from "@toonflow/server/documentFormats";
 import {
@@ -149,7 +149,7 @@ import assetLibraryDialog from "./assetLibraryDialog.vue";
 import bg from "./bg.vue";
 import projectCover from "./projectCover.vue";
 import creditBalance from "@/components/credits/creditBalance.vue";
-import { creditError, creditSummary, refreshCredits } from "@/lib/credits";
+import { creditError, creditSummary, refreshCredits, waitForCreditPurchase } from "@/lib/credits";
 
 const settingsVisible = ref(false);
 const assetsVisible = ref(false);
@@ -164,6 +164,7 @@ const homeSections = [
 ];
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
+const route = useRoute();
 const pageLifetime = new AbortController();
 const creating = ref(false);
 const opening = ref(false);
@@ -197,6 +198,7 @@ onMounted(() => {
   window.addEventListener("toonflow:credits-changed", refreshCredits);
   void loadProjects();
   void refreshCredits();
+  void handleCreditCheckoutReturn();
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let phraseIndex = 0;
   watch([() => !!prompt.value, locale], ([hasInput], _previous, onCleanup) => {
@@ -232,6 +234,42 @@ onMounted(() => {
     onCleanup(() => clearTimeout(timer));
   }, { immediate: true });
 });
+
+async function handleCreditCheckoutReturn() {
+  const checkout = route.query.checkout;
+  const sessionId = route.query.session_id;
+  if (checkout !== "success" && checkout !== "cancelled") return;
+
+  const query = { ...route.query };
+  delete query.checkout;
+  delete query.session_id;
+  await router.replace({ query });
+
+  if (checkout === "cancelled") {
+    ElMessage.info(translate("已取消支付"));
+    return;
+  }
+  if (typeof sessionId !== "string" || !sessionId) {
+    ElMessage.warning(translate("支付已完成，请在积分面板刷新余额"));
+    return;
+  }
+
+  try {
+    const purchase = await waitForCreditPurchase(sessionId);
+    await refreshCredits();
+    if (purchase.processed) {
+      ElMessage.success(translate("{0} 积分已到账", {
+        0: new Intl.NumberFormat(locale.value, { maximumFractionDigits: 0 }).format(purchase.credits),
+      }));
+    } else {
+      ElMessage.warning(translate("支付已完成，积分到账可能稍有延迟，请稍后刷新"));
+    }
+  } catch (error) {
+    ElMessage.error(axios.isAxiosError<{ message?: string }>(error)
+      ? error.response?.data?.message || error.message
+      : error instanceof Error ? error.message : translate("查询支付结果失败"));
+  }
+}
 
 onUnmounted(() => {
   pageLifetime.abort();
