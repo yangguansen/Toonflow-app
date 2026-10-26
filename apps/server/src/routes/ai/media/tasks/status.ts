@@ -18,7 +18,10 @@ export default Router().post("/", validateFields({
     if (item.result && item.result.code !== 404) return item;
     const stored = byId.get(item.taskId);
     if (!stored) return item;
-    if (stored.status === "succeeded") return { taskId: item.taskId, result: success(stored.outputFiles) };
+    if (stored.status === "succeeded") {
+      if (!stored.outputFiles.length) return { taskId: item.taskId, result: error("生成任务不存在或已过期", null, 404) };
+      return { taskId: item.taskId, result: success(stored.outputFiles) };
+    }
     if (stored.status === "failed") return { taskId: item.taskId, result: error("媒体生成失败，请重新发起", null, 500) };
     return { taskId: item.taskId };
   });

@@ -186,8 +186,8 @@ function createMediaTasks() {
         directory,
         finish(result) {
           cleanup();
-          if (result.code === 200 && result.data) resolve(result.data);
-          else reject(new Error(result.message || "媒体生成失败"));
+          if (result.code === 200 && result.data?.length) resolve(result.data);
+          else reject(Object.assign(new Error(result.message || "媒体生成失败"), { code: result.code, mediaTaskTerminal: true }));
         },
         fail(error) { cleanup(); reject(error); },
       });

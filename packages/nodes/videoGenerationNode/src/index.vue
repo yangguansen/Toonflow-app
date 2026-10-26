@@ -307,6 +307,10 @@ function loadModels() {
   return modelsRequest;
 }
 
+function clearUnrecoverableTask(error: unknown) {
+  if ((error as { mediaTaskTerminal?: boolean }).mediaTaskTerminal) data.value.taskId = undefined;
+}
+
 async function startGeneration() {
   const choice = selectedModel.value;
   const input = generationInput.value;
@@ -332,7 +336,10 @@ async function startGeneration() {
       outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
       data.value.taskId = undefined;
     }))
-    .catch((error) => showNodeError(error, "视频生成失败"));
+    .catch((error) => {
+      clearUnrecoverableTask(error);
+      showNodeError(error, "视频生成失败");
+    });
   return { status: "generating" };
 }
 
@@ -349,7 +356,10 @@ async function resumeGeneration() {
       data.value.taskId = taskId;
       if (latest.status === "succeeded") {
         const result = latest.outputFiles.find(item => item.mediaType === "video");
-        if (!result) throw new Error("恢复任务缺少视频输出");
+        if (!result) {
+          data.value.taskId = undefined;
+          return;
+        }
         outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
         data.value.taskId = undefined;
         return;
@@ -360,7 +370,10 @@ async function resumeGeneration() {
     outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
     data.value.taskId = undefined;
   })
-    .catch((error) => showNodeError(error, "视频任务恢复失败"));
+    .catch((error) => {
+      clearUnrecoverableTask(error);
+      if ((error as { code?: number }).code !== 404) showNodeError(error, "视频任务恢复失败");
+    });
   await generation;
   if (!disposed && !deleting.value) await loadModels();
 }

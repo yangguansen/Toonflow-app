@@ -17,4 +17,4 @@ docker buildx build \
 ## server side
 cd /opt/toonflow
 docker compose pull
-docker compose up -d --no-build
+docker compose up -d --no-build --force-recreate

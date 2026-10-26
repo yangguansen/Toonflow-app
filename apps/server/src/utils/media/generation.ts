@@ -288,6 +288,7 @@ export async function generateMedia(
       await settleAiUsage(billingUser, {
         usageId,
         actualCostUsd,
+        outputFiles: result,
         providerGenerationId: reportedUsage?.generationId,
         isByok: reportedUsage?.isByok,
       });

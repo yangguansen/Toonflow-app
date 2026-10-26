@@ -169,6 +169,7 @@ export async function reserveAiUsage(user: AuthUser, input: {
 export async function settleAiUsage(user: AuthUser, input: {
   usageId: string;
   actualCostUsd: number;
+  outputFiles: GeneratedMedia[];
   providerGenerationId?: string;
   isByok?: boolean;
 }) {
@@ -178,6 +179,7 @@ export async function settleAiUsage(user: AuthUser, input: {
     p_charged_microcredits: input.isByok ? 0 : creditsForUsd(input.actualCostUsd),
     p_provider_generation_id: input.providerGenerationId?.slice(0, 500) ?? null,
     p_is_byok: input.isByok ?? null,
+    p_output_files: input.outputFiles,
   });
   return { balanceCredits: creditsToNumber(microcredits(result.balanceMicrocredits)) };
 }
