@@ -1,0 +1,20 @@
+
+<!-- local run -->
+docker compose \
+  --env-file .env.local \
+  up -d --build
+
+<!-- build and push image -->
+docker buildx build \
+  --platform linux/amd64 \
+  --push \
+  -t ghcr.io/yangguansen/toonflow-app:sam-dev \
+  -t ghcr.io/yangguansen/toonflow-app:sam-dev-$(git rev-parse --short HEAD) \
+  .
+
+
+
+## server side
+cd /opt/toonflow
+docker compose pull
+docker compose up -d --no-build

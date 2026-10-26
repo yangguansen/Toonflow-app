@@ -14,13 +14,13 @@
             <el-text class="providerId" size="small" type="info" :title="item.id">{{ item.id }}</el-text>
           </div>
         </div>
-        <tfAccount v-if="isTfRouterProvider(item)" :apiKey="typeof item.apiKey === 'string' ? item.apiKey : ''" :visible="visible" :saveApiKey="(key) => saveProviderApiKey(item.id, key)" />
+        <tfAccount v-if="authState.isAdmin && isTfRouterProvider(item)" :apiKey="typeof item.apiKey === 'string' ? item.apiKey : ''" :visible="visible" :saveApiKey="(key) => saveProviderApiKey(item.id, key)" />
         <div class="providerFooter">
           <div class="providerMeta">
             <el-tag v-if="getProviderVersion(item)" size="small" type="info" effect="plain">v{{ getProviderVersion(item) }}</el-tag>
             <el-text size="small" type="info">{{ item.models.length }} 个模型</el-text>
           </div>
-          <el-space class="itemActions" wrap>
+          <el-space v-if="authState.isAdmin" class="itemActions" wrap>
             <el-button v-if="isTfRouterProvider(item) && item.apiKey?.trim() && !item.models.length" text :icon="IconRefresh" :loading="fetchingId === item.id" :disabled="!!deletingId || !!fetchingId" @click="fetchProviderModels(item)">获取模型</el-button>
             <el-button text :icon="IconEdit" :disabled="!!deletingId" @click="openCustomProvider(item)">编辑</el-button>
             <el-popconfirm title="确定删除此供应商及其模型？" confirmButtonText="删除" cancelButtonText="取消" @confirm="deleteProvider(item.id)">
@@ -30,7 +30,7 @@
         </div>
       </el-card>
     </div>
-    <div class="providerActions">
+    <div v-if="authState.isAdmin" class="providerActions">
       <el-button class="addButton" :icon="IconPlus" @click="openProvider">添加供应商</el-button>
       <el-button class="addButton" :icon="IconSettings" @click="openCustomProvider()">添加自定义供应商</el-button>
     </div>
@@ -49,6 +49,7 @@ import { languageProviders } from "@toonflow/providers";
 import logoUrl from "@toonflow/assets/logo.svg";
 import tfAccount from "../../tfAccount.vue";
 import { isTfRouterProvider } from "@/lib/tf";
+import { authState } from "@/lib/auth";
 
 const { visible = true } = defineProps<{ visible?: boolean }>();
 const addProviderDialog = shallowRef<Component>();

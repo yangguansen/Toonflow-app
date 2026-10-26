@@ -142,8 +142,8 @@ export async function createApp({
   app.use("/api/desktop", desktopRequest);
 
   const { default: initializeProviderModels } = await import("@/utils/ai/initialize");
-  // ACT: 启动先使用已有模型，远程刷新不阻塞服务监听。
-  void initializeProviderModels().catch(error => console.warn("启动时刷新供应商模型失败：", error));
+  // ACT: 完成默认语言供应商初始化后再注册路由，避免首个设置请求读到空模型列表。
+  await initializeProviderModels().catch(error => console.warn("启动时刷新供应商模型失败：", error));
   const router = await import("@/router");
   router.default(app);
   const [{ createMcpRouter }, { getMcpTools }, { authorizeMcp }, { skillResources }] = await Promise.all([

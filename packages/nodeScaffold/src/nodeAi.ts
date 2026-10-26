@@ -109,7 +109,7 @@ function createMediaTasks() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let polling = false;
 
-  function schedule(delay = 1000) {
+  function schedule(delay = 30000) {
     if (polling || timer !== undefined || (!pending.size && !cancellations.size)) return;
     timer = setTimeout(poll, delay);
   }
