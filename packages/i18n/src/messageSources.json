@@ -651,7 +651,7 @@
   "允许其他设备连接": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
-  "其他电脑、安卓设备可使用这里的项目与配置。连接时请保持 Toonflow 运行。": [
+  "其他电脑、安卓设备可使用这里的项目与配置。连接时请保持 AI classroom 运行。": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
   "连接新设备": [
@@ -753,7 +753,7 @@
   "局域网地址": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
-  "无法连接时可尝试其他地址，并检查电脑防火墙是否允许 Toonflow 联网。": [
+  "无法连接时可尝试其他地址，并检查电脑防火墙是否允许 AI classroom 联网。": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
   "公网 HTTPS 地址": [
@@ -819,7 +819,7 @@
   "生成二维码失败": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
-  "撤销后，这个设备将无法继续访问当前 Toonflow。": [
+  "撤销后，这个设备将无法继续访问当前 AI classroom。": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
   ],
   "撤销设备授权": [
@@ -1421,7 +1421,7 @@
   "启动命令": [
     "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue"
   ],
-  "命令在运行 Toonflow 的电脑或服务端执行。": [
+  "命令在运行 AI classroom 的电脑或服务端执行。": [
     "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue"
   ],
   "当前平台不支持本地 MCP，请改用远程连接。": [
@@ -1702,7 +1702,7 @@
   "下载版本：{0} · {1}": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
-  "保存在当前 Toonflow 服务的数据目录，下载后自动复用。": [
+  "保存在当前 AI classroom 服务的数据目录，下载后自动复用。": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
   "下载版": [
@@ -1714,13 +1714,13 @@
   "不可用": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
-  "优先使用已下载的版本；未下载时，从当前 Toonflow 服务的系统 PATH 查找。": [
+  "优先使用已下载的版本；未下载时，从当前 AI classroom 服务的系统 PATH 查找。": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
   "仅使用此页面下载的版本。": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
-  "仅从当前 Toonflow 服务的系统 PATH 查找 FFmpeg 与 ffprobe。": [
+  "仅从当前 AI classroom 服务的系统 PATH 查找 FFmpeg 与 ffprobe。": [
     "apps/web/src/components/settings/panels/pluginMarket/ffmpeg.vue"
   ],
   "等待下载": [
@@ -1898,7 +1898,7 @@
   "开启 MCP": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
   ],
-  "允许外部 Coding 工具和 Agent 操作 Toonflow。开启后，将客户端配置添加到对应工具中。": [
+  "允许外部 Coding 工具和 Agent 操作 AI classroom。开启后，将客户端配置添加到对应工具中。": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
   ],
   "连接状态": [
@@ -1926,7 +1926,7 @@
     "apps/web/src/components/agent/mentionMenu.vue",
     "apps/web/src/pages/workspace/index.vue"
   ],
-  "画布与节点操作需要 Toonflow 界面保持打开。": [
+  "画布与节点操作需要 AI classroom 界面保持打开。": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
   ],
   "首选本地端口": [
@@ -1953,7 +1953,7 @@
   "HTTP 配置包含访问凭证，请仅提供给可信的客户端。": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
   ],
-  "教外部 Agent 组合使用 Toonflow 工具。将 SKILL.md 安装到对应 Coding 工具的技能目录。": [
+  "教外部 Agent 组合使用 AI classroom 工具。将 SKILL.md 安装到对应 Coding 工具的技能目录。": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
   ],
   "查看 Skill": [
@@ -2680,13 +2680,13 @@
     "apps/web/src/components/settings/panels/mediaModel/providerAgentDialog.vue",
     "apps/web/src/components/singleAgentDialog.vue"
   ],
-  "Toonflow 说明": [
+  "AI classroom 说明": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
   "为所有聊天提供额外说明和上下文。支持 Markdown，保存后下一次发送消息时生效。": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
-  "Toonflow 说明内容": [
+  "AI classroom 说明内容": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
   "正在读取…": [
@@ -2697,10 +2697,10 @@
   "有未保存的修改": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
-  "重新加载 Toonflow 说明": [
+  "重新加载 AI classroom 说明": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
-  "保存 Toonflow 说明": [
+  "保存 AI classroom 说明": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
   "启用本地记忆": [
@@ -2718,7 +2718,7 @@
   "查看": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
-  "Toonflow 记忆": [
+  "AI classroom 记忆": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
   "本地记忆内容": [
@@ -2763,7 +2763,7 @@
   "读取本地记忆失败，请重试": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
-  "将删除所有工作区共用的本地记忆及未保存的记忆修改，此操作无法撤销。Toonflow 说明会保留。": [
+  "将删除所有工作区共用的本地记忆及未保存的记忆修改，此操作无法撤销。AI classroom 说明会保留。": [
     "apps/web/src/components/settings/panels/personalization.vue"
   ],
   "本地记忆已更新，未删除任何内容。请重新查看后重试。": [
@@ -2826,7 +2826,7 @@
   "展示二维码": [
     "apps/web/src/components/settings/panels/about.vue"
   ],
-  "Toonflow 交流群二维码": [
+  "AI classroom 交流群二维码": [
     "apps/web/src/components/settings/panels/about.vue"
   ],
   "Toonflow 是为爱发电的开源项目。欢迎文明交流、友善反馈；回复可能需要一些时间，请避免责问或命令式沟通，感谢你的理解与尊重。": [
@@ -2845,7 +2845,7 @@
   "成为赞助商": [
     "apps/web/src/components/settings/panels/about.vue"
   ],
-  "Toonflow 商务合作二维码": [
+  "AI classroom 商务合作二维码": [
     "apps/web/src/components/settings/panels/about.vue"
   ],
   "查看 {0} 详情": [
@@ -2986,7 +2986,7 @@
   "圆润": [
     "apps/web/src/components/settings/panels/ui.vue"
   ],
-  "Toonflow 每一个灵感，都值得被看见": [
+  "AI classroom 每一个灵感，都值得被看见": [
     "apps/web/src/components/settings/panels/ui.vue"
   ],
   "这是当前颜色、字体与圆角的实际效果。": [
@@ -3629,7 +3629,7 @@
   "开始新对话": [
     "apps/web/src/components/agent/conversation/messageList.vue"
   ],
-  "你好，我是 Toonflow 助手": [
+  "你好，我是 AI classroom 助手": [
     "apps/web/src/components/agent/conversation/messageList.vue"
   ],
   "从一个想法开始": [
@@ -3744,7 +3744,7 @@
   "设备互联说明": [
     "apps/web/src/components/mobileConnect.vue"
   ],
-  "请使用 Toonflow 桌面端或 Android 客户端连接其他设备。": [
+  "请使用 AI classroom 桌面端或 Android 客户端连接其他设备。": [
     "apps/web/src/components/mobileConnect.vue"
   ],
   "本机共享可在“设置 → 设备互联”中管理。": [
@@ -3837,7 +3837,7 @@
   "手动输入": [
     "apps/web/src/components/mobileConnect.vue"
   ],
-  "请扫描 Toonflow 的设备互联二维码": [
+  "请扫描 AI classroom 的设备互联二维码": [
     "apps/web/src/components/mobileConnect.vue"
   ],
   "请输入局域网地址或公网 HTTPS 地址，不能包含路径、账号或参数": [
@@ -4805,7 +4805,7 @@
   "使用教程": [
     "apps/web/src/pages/workspace/index.vue"
   ],
-  "Toonflow 需求/BUG反馈表": [
+  "AI classroom 需求/BUG反馈表": [
     "apps/web/src/pages/workspace/index.vue"
   ],
   "汇报 BUG": [
@@ -6128,7 +6128,7 @@
   "稍后配置": [
     "apps/web/src/pages/hello/index.vue"
   ],
-  "© {0} Toonflow · 保留所有权利。": [
+  "© {0} AI classroom · 保留所有权利。": [
     "apps/web/src/pages/hello/index.vue"
   ],
   "保存引导状态失败，请重试": [
@@ -6158,7 +6158,7 @@
   "自动配置失败，请重试": [
     "apps/web/src/pages/hello/index.vue"
   ],
-  "登录 Toonflow": [
+  "登录 AI classroom": [
     "apps/web/src/pages/login/index.vue"
   ],
   "使用 {0} 登录": [

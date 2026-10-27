@@ -2,11 +2,11 @@
   <main class="loginPage">
     <section class="loginPanel" aria-labelledby="loginTitle">
       <div class="brand">
-        <el-image class="brandLogo" :src="logoUrl" fit="contain" alt="Toonflow" />
-        <span>Toonflow</span>
+        <el-image class="brandLogo" :src="logoUrl" fit="contain" alt="AI classroom" />
+        <span>AI classroom</span>
       </div>
       <div class="loginContent">
-        <h1 id="loginTitle">{{ translate("登录 Toonflow") }}</h1>
+        <h1 id="loginTitle">{{ translate("登录 AI classroom") }}</h1>
         <p>{{ translate("输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。") }}</p>
         <el-alert v-if="authState.error" :title="authState.error" type="error" :closable="false" showIcon />
         <el-form v-if="authState.configured" class="emailLogin" labelPosition="top" @submit.prevent="sendLoginLink">
