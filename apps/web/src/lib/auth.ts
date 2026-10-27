@@ -123,6 +123,17 @@ export function signInWithOAuth(provider: string) {
   window.location.assign(`/api/auth/start?provider=${encodeURIComponent(provider)}`);
 }
 
+export async function sendMagicLink(email: string) {
+  if (!config?.configured) throw new Error(config?.message || translate("Supabase 认证尚未配置"));
+  const response = await fetch("/api/auth/magicLink", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const body = await response.json().catch(() => ({})) as { message?: string };
+  if (!response.ok) throw new Error(body.message || translate("无法发送登录链接，请稍后重试"));
+}
+
 export async function refreshAuthProfile() {
   await loadSession();
 }

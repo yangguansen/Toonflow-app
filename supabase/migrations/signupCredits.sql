@@ -3,8 +3,11 @@ alter table public.credit_ledger
   drop constraint if exists credit_ledger_kind_check;
 
 alter table public.credit_ledger
+  drop constraint if exists creditLedgerKindCheck;
+
+alter table public.credit_ledger
   add constraint creditLedgerKindCheck
-  check (kind in ('grant', 'signup', 'reserve', 'settle', 'release'));
+  check (kind in ('grant', 'signup', 'purchase', 'reserve', 'settle', 'release'));
 
 -- 每个用户至多一条 signup 流水
 create unique index if not exists creditSignupOwnerIndex

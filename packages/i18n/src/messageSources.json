@@ -6161,9 +6161,6 @@
   "登录 Toonflow": [
     "apps/web/src/pages/login/index.vue"
   ],
-  "使用你的 Supabase 账号进入工作区。": [
-    "apps/web/src/pages/login/index.vue"
-  ],
   "使用 {0} 登录": [
     "apps/web/src/pages/login/index.vue"
   ],
@@ -6171,6 +6168,35 @@
     "apps/web/src/pages/login/index.vue"
   ],
   "无法发起登录": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "请输入邮箱": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "邮箱": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "发送登录链接": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "登录链接已发送": [
+    "apps/server/src/routes/auth/magicLink.ts"
+  ],
+  "登录链接已发送，请检查 {0} 的收件箱并打开链接。": [
+    "apps/web/src/pages/login/index.vue"
+  ],
+  "请求过于频繁，请稍后再试": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "无法发送登录链接，请检查邮箱地址或认证配置": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "无法发送登录链接，请稍后重试": [
+    "apps/server/src/utils/auth/supabase.ts",
+    "apps/web/src/lib/auth.ts",
     "apps/web/src/pages/login/index.vue"
   ],
   "请求来源无效": [

@@ -7,8 +7,27 @@
       </div>
       <div class="loginContent">
         <h1 id="loginTitle">{{ translate("登录 Toonflow") }}</h1>
-        <p>{{ translate("使用你的 Supabase 账号进入工作区。") }}</p>
+        <p>{{ translate("输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。") }}</p>
         <el-alert v-if="authState.error" :title="authState.error" type="error" :closable="false" showIcon />
+        <el-form v-if="authState.configured" class="emailLogin" labelPosition="top" @submit.prevent="sendLoginLink">
+          <el-form-item :label="translate('邮箱')">
+            <el-input
+              v-model="email"
+              type="email"
+              autocomplete="username"
+              inputmode="email"
+              autocapitalize="none"
+              :spellcheck="false"
+              :disabled="emailPending || !!pendingProvider"
+              aria-label="邮箱" />
+          </el-form-item>
+          <el-alert v-if="emailError" :title="emailError" type="error" :closable="false" showIcon />
+          <el-alert v-if="emailSent" :title="translate('登录链接已发送，请检查 {0} 的收件箱并打开链接。', { 0: email.trim() })" type="success" :closable="false" showIcon />
+          <el-button class="emailLoginButton" type="primary" nativeType="submit" :loading="emailPending" :disabled="!!pendingProvider">
+            <icon-login :size="18" aria-hidden="true" />
+            <span>{{ translate("发送登录链接") }}</span>
+          </el-button>
+        </el-form>
         <div v-if="providers.length" class="providerActions">
           <el-button
             v-for="provider in providers"
@@ -16,7 +35,7 @@
             class="providerButton"
             type="primary"
             :loading="pendingProvider === provider"
-            :disabled="!!pendingProvider"
+            :disabled="!!pendingProvider || emailPending"
             @click="login(provider)">
             <icon-brand-github v-if="provider === 'github'" :size="19" aria-hidden="true" />
             <icon-brand-google v-else-if="provider === 'google'" :size="19" aria-hidden="true" />
@@ -30,15 +49,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { translate } from "@toonflow/i18n/vue";
 import { IconBrandGithub, IconBrandGoogle, IconLogin } from "@tabler/icons-vue";
 import logoUrl from "@toonflow/assets/logo.svg";
-import { authState, getAuthProviders, signInWithOAuth } from "@/lib/auth";
+import { authState, getAuthProviders, sendMagicLink, signInWithOAuth } from "@/lib/auth";
 
 const pendingProvider = ref("");
+const emailPending = ref(false);
+const email = ref("");
+const emailError = ref("");
+const emailSent = ref(false);
 const providers = computed(() => getAuthProviders());
+watch(email, () => {
+  emailError.value = "";
+  emailSent.value = false;
+});
 
 function providerLabel(provider: string) {
   return ({ github: "GitHub", google: "Google" } as Record<string, string>)[provider] ?? provider;
@@ -52,6 +79,26 @@ async function login(provider: string) {
   } catch (error) {
     pendingProvider.value = "";
     ElMessage.error(error instanceof Error ? error.message : translate("无法发起登录"));
+  }
+}
+
+async function sendLoginLink() {
+  if (emailPending.value) return;
+  emailError.value = "";
+  emailSent.value = false;
+  if (!email.value.trim()) {
+    emailError.value = translate("请输入邮箱");
+    return;
+  }
+  emailPending.value = true;
+  try {
+    await sendMagicLink(email.value.trim());
+    authState.error = "";
+    emailSent.value = true;
+  } catch (error) {
+    emailError.value = error instanceof Error ? error.message : translate("无法发送登录链接，请稍后重试");
+  } finally {
+    emailPending.value = false;
   }
 }
 </script>
@@ -103,6 +150,28 @@ async function login(provider: string) {
         margin: 0 0 8px;
         color: var(--el-text-color-secondary);
         line-height: 1.7;
+      }
+
+      .emailLogin {
+        display: grid;
+        gap: 2px;
+
+        :deep(.el-form-item) {
+          margin-bottom: 16px;
+        }
+
+        .emailLoginButton {
+          width: 100%;
+          min-height: 46px;
+          margin-top: 2px;
+          border-radius: calc(var(--ui-radius) * 1.5);
+
+          :deep(> span) {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+          }
+        }
       }
 
       .providerActions {

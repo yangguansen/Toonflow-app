@@ -4,14 +4,17 @@
 
 1. 在 Supabase dev 项目中执行 `supabase/migrations/authIsolation.sql`。
 2. 执行 `supabase/migrations/creditLedger.sql`。该迁移创建积分钱包、AI 用量、积分流水及服务端 RPC；只允许用户读取自己的数据，写入由受控函数完成。
-3. 执行 `supabase/migrations/durableMediaTasks.sql`。该迁移增加视频远端任务恢复字段和服务端 Worker RPC。
-4. 在 Authentication 的 URL Configuration 中：
+3. 执行 `supabase/migrations/signupCredits.sql`。该迁移为新创建的用户资料发放 500 初始积分。
+4. 执行 `supabase/migrations/durableMediaTasks.sql`。该迁移增加视频远端任务恢复字段和服务端 Worker RPC。
+5. 在 Authentication 的 URL Configuration 中：
    - Site URL 配置为 Web 服务地址，例如本地 Docker 的 `http://127.0.0.1:3000/`
    - Redirect URL 配置为 `http://127.0.0.1:3000/api/auth/callback`
-5. 在 Authentication 的 Providers 中启用要使用的 OAuth Provider，并填写对应平台的 Client ID 与 Secret。
-6. 将 `.env.example` 复制为 `.env`，填写 dev project 的 URL、anon key、service role key 和已启用的 Provider。
+6. 在 Authentication 的 Providers 中启用 Email Provider，允许新用户注册以支持首次 Magic Link 自动建号，邮件模板保留 `{{ .ConfirmationURL }}`。开发和小规模测试可直接使用 Supabase 内置邮件服务，不需要单独配置 SMTP；正式公开部署前建议配置自定义 SMTP。需要 OAuth 登录时再启用对应 Provider，并填写平台的 Client ID 与 Secret。
+7. 将 `.env.example` 复制为 `.env`，填写 dev project 的 URL、anon key、service role key 和已启用的 Provider。
 
-`SUPABASE_URL`、`SUPABASE_ANON_KEY` 只由 Express 使用。OAuth PKCE 交换、token 刷新和 Supabase 请求都在服务端完成，浏览器只保存 `/api` 路径下的 HttpOnly 会话 Cookie，不接触 Supabase key 或用户 token。
+`SUPABASE_URL`、`SUPABASE_ANON_KEY` 只由 Express 使用。Magic Link 和 OAuth 的 PKCE 交换、token 刷新和 Supabase 请求都在服务端完成，浏览器只保存 `/api` 路径下的 HttpOnly 会话 Cookie，不接触 Supabase key 或用户 token。
+
+Magic Link 自动创建首次登录用户，不提供站点注册表单。该流程只面向浏览器 Web 部署，不实现桌面端或移动端，也不提供外部浏览器到客户端的会话回传。由于使用 PKCE，邮件链接必须在发起登录的同一浏览器中打开。
 
 `SUPABASE_SERVICE_ROLE_KEY` 仅用于服务端视频任务恢复和 Stripe Webhook 积分入账。它拥有绕过 RLS 的权限，必须只放在服务端环境变量中，不能进入前端、日志或镜像。
 

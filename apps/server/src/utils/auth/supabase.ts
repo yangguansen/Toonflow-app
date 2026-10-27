@@ -42,6 +42,13 @@ type TokenResponse = {
   msg?: string;
 };
 
+type ErrorResponse = {
+  error?: string;
+  error_description?: string;
+  msg?: string;
+  message?: string;
+};
+
 const authCache = new Map<string, CachedAuth>();
 const refreshRequests = new Map<string, Promise<AuthTokens>>();
 
@@ -192,6 +199,45 @@ async function tokenRequest(config: SupabaseConfig, grantType: "pkce" | "refresh
 
 export function exchangeAuthorizationCode(code: string, codeVerifier: string) {
   return tokenRequest(getSupabaseConfig(), "pkce", { auth_code: code, code_verifier: codeVerifier });
+}
+
+export async function sendMagicLink(email: string, redirectTo: string, codeChallenge: string) {
+  const config = getSupabaseConfig();
+  const target = new URL(`${config.url}/auth/v1/otp`);
+  target.searchParams.set("redirect_to", redirectTo);
+  let response: Response;
+  try {
+    response = await fetch(target, {
+      method: "POST",
+      headers: {
+        apikey: config.anonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        create_user: true,
+        code_challenge: codeChallenge,
+        code_challenge_method: "s256",
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (cause) {
+    throw Object.assign(new Error("无法连接 Supabase 认证服务，请检查网络后重试", { cause }), { status: 503, code: "AUTH_UNAVAILABLE" });
+  }
+  if (response.ok) return;
+
+  const data = await response.json().catch(() => ({})) as ErrorResponse;
+  const detail = data.error_description || data.message || data.msg || data.error;
+  const status = response.status === 429 ? 429 : response.status >= 500 ? 503 : 400;
+  const message = response.status === 429
+    ? "请求过于频繁，请稍后再试"
+    : status === 503
+      ? "无法发送登录链接，请稍后重试"
+      : "无法发送登录链接，请检查邮箱地址或认证配置";
+  throw Object.assign(new Error(message, detail ? { cause: new Error(detail) } : undefined), {
+    status,
+    code: "AUTH_MAGIC_LINK_FAILED",
+  });
 }
 
 export function refreshAuthTokens(refreshToken: string) {

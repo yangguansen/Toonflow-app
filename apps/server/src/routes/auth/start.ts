@@ -20,6 +20,6 @@ export default Router().get("/", validateFields({ provider: z.string().regex(/^[
   target.searchParams.set("redirect_to", `${origin}/api/auth/callback`);
   target.searchParams.set("code_challenge", challenge);
   target.searchParams.set("code_challenge_method", "s256");
-  u.authCookies.setOAuthVerifier(req, res, verifier);
+  u.authCookies.setAuthVerifier(req, res, verifier);
   res.set("Cache-Control", "no-store").redirect(target.href);
 });

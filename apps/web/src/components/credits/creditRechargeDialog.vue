@@ -128,6 +128,10 @@ watch(visible, opened => {
   }
 }
 
+.packageButton + .packageButton {
+  margin-left: 0;
+}
+
 .packageCredits {
   font-size: 15px;
   font-variant-numeric: tabular-nums;

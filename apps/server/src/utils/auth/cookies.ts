@@ -3,7 +3,7 @@ import type { AuthTokens } from "@/utils/auth/supabase";
 
 const accessCookie = "toonflowAccess";
 const refreshCookie = "toonflowRefresh";
-const oauthVerifierCookie = "toonflowPkce";
+const authVerifierCookie = "toonflowPkce";
 const legacyOAuthCookie = "toonflowOAuth";
 
 function secureCookie(req: Request) {
@@ -55,23 +55,23 @@ export function clearSessionCookies(req: Request, res: Response) {
   res.clearCookie(refreshCookie, { httpOnly: true, sameSite: "lax", secure, path: "/api" });
 }
 
-export function setOAuthVerifier(req: Request, res: Response, verifier: string) {
+export function setAuthVerifier(req: Request, res: Response, verifier: string, maxAge = 10 * 60 * 1000) {
   clearLegacyOAuthCookies(req, res);
-  res.cookie(oauthVerifierCookie, verifier, {
+  res.cookie(authVerifierCookie, verifier, {
     httpOnly: true,
     sameSite: "lax",
     secure: secureCookie(req),
     path: "/api/auth",
-    maxAge: 10 * 60 * 1000,
+    maxAge,
   });
 }
 
-export function readOAuthVerifier(req: Request) {
-  return readCookie(req, oauthVerifierCookie);
+export function readAuthVerifier(req: Request) {
+  return readCookie(req, authVerifierCookie);
 }
 
-export function clearOAuthVerifier(req: Request, res: Response) {
-  res.clearCookie(oauthVerifierCookie, {
+export function clearAuthVerifier(req: Request, res: Response) {
+  res.clearCookie(authVerifierCookie, {
     httpOnly: true,
     sameSite: "lax",
     secure: secureCookie(req),
