@@ -65,7 +65,7 @@
       <background :gap="16" pattern-color="var(--el-border-color)" />
       <canvasEmpty
         v-if="active && !settingsVisible && project?.directory && canvasReady && !flow.getNodes.value.length"
-        :availableNodes="availableNodes"
+        :availableNodes="addableNodes"
         @create="createEmptyNode" />
       <canvasMenu ref="canvasMenuRef" v-model:canvasId="canvasId" :directory="project?.directory" :initialCanvasId="initialCanvasId" :activateCanvas="activateCanvas" :flushSave="flushCanvases ?? flushCanvasSave">
         <assetLibrary ref="assetLibraryRef" v-model="assetsVisible" :directory="project?.directory" />
@@ -82,7 +82,7 @@
       <nodeMenu
         :key="JSON.stringify(['nodeMenu', project?.directory, canvasId])"
         ref="nodeMenuRef"
-        :remoteNodes="availableNodes"
+        :remoteNodes="addableNodes"
         :pasteNode="pasteClipboardNode"
         :uploadFiles="canvasId && project?.directory ? selectFiles : undefined"
         :canUndo="canUndo"
@@ -210,6 +210,9 @@ const nodeLoads = shallowReactive(new Map<string, Promise<void>>());
 const nodeReloads = new Set<string>();
 const nodeErrors = ref<Record<string, string>>({});
 const availableNodes = computed(() => nodeOptions.value.filter(node => nodeTypes.value[node.type] && !nodeErrors.value[node.type]));
+const addableNodes = computed(() => availableNodes.value.filter(node =>
+  node.type !== "remote-audioNode" && node.type !== "remote-audioGenerationNode"
+));
 const nodeListLoading = ref(true);
 const remoteNodeTypes = computed(() => [
   ...new Set((flowData.value as { type?: string }[]).map((item) => item.type).filter((type): type is string => !!type?.startsWith("remote-"))),
@@ -275,7 +278,7 @@ provide("saveNodeToAssets", (label: string, outputs: { label: string; output: No
 let canvasController = new AbortController();
 let workspaceController = new AbortController();
 const createCanvasContext = useCanvasTools({
-  availableNodes,
+  availableNodes: addableNodes,
   flushSave: flushCanvasSave,
   menu() {
     if (!canvasMenuRef.value) throw new Error("画布菜单尚未就绪");
