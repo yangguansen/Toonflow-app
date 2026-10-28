@@ -9,7 +9,7 @@ const rules = [
 ] as const;
 
 const apiBase = "https://openrouter.ai/api/v1";
-const version = "2.4.0";
+const version = "2.4.2";
 const providerModels = [
   {
     id: "qwen/qwen-image-2.1-turbo", label: "Qwen Image 2.1 Turbo", type: "image",
@@ -30,16 +30,6 @@ const providerModels = [
     id: "black-forest-labs/flux-3-image", label: "FLUX 3 Image", type: "image",
     mode: ["text", "singleImage", "multiReference"], imageSizes: ["768", "1K", "1.5K", "2K", "4K"], maxReferences: 10, maxOutputs: 1,
     imageRatios: ["21:9", "2:1", "16:9", "3:2", "4:3", "1:1", "3:4", "2:3", "9:16", "1:2"],
-  },
-  {
-    id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", type: "image",
-    mode: ["text", "singleImage", "multiReference"], imageSizes: ["1K", "2K", "4K"], maxReferences: 14, maxOutputs: 1,
-    imageRatios: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"],
-  },
-  {
-    id: "openai/gpt-image-2", label: "GPT Image 2", type: "image",
-    mode: ["text", "singleImage", "multiReference"], imageSizes: ["1K", "2K", "4K"], maxReferences: 16, maxOutputs: 10,
-    imageRatios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"],
   },
   {
     id: "minimax/hailuo-3-max", label: "MiniMax H3 Max", type: "video",
@@ -100,6 +90,37 @@ const imageModels = providerModels.filter(model => model.type === "image");
 const videoModels = providerModels.filter(model => model.type === "video");
 const imageConfigs = new Map(imageModels.map(model => [model.id, model]));
 const videoConfigs = new Map(videoModels.map(model => [model.id, model]));
+
+type SeedancePriceBook = {
+  withAudio: Record<string, number>;
+  withoutAudio: Record<string, number>;
+  withVideoInput: Record<string, number>;
+};
+
+// ACT: OpenRouter 的 Seedance API 只返回 token 单价，但模型页公开了每秒价格档位。
+// 价格核对日期：2026-10-28；来源为 OpenRouter 的 seedance-2.0、2.0-fast、2.0-mini 和 2.5 模型定价页。
+const seedancePriceBooks: Record<string, SeedancePriceBook> = {
+  "bytedance/seedance-2.5": {
+    withAudio: { "480p": 0.1028056, "720p": 0.23112, "1080p": 0.52002, "4k": 2.08008 },
+    withoutAudio: { "480p": 0.1028056, "720p": 0.23112, "1080p": 0.52002, "4k": 2.08008 },
+    withVideoInput: { "480p": 0.0614912, "720p": 0.13824, "1080p": 0.31104, "4k": 1.24416 },
+  },
+  "bytedance/seedance-2.0": {
+    withAudio: { "480p": 0.067256, "720p": 0.1512, "1080p": 0.37422, "4k": 0.7776 },
+    withoutAudio: { "480p": 0.067256, "720p": 0.1512, "1080p": 0.37422, "4k": 0.7776 },
+    withVideoInput: { "480p": 0.0413144, "720p": 0.09288, "1080p": 0.22842, "4k": 0.46656 },
+  },
+  "bytedance/seedance-2.0-fast": {
+    withAudio: { "480p": 0.0403536, "720p": 0.09072, "1080p": 0.20412, "4k": 0.81648 },
+    withoutAudio: { "480p": 0.0403536, "720p": 0.09072, "1080p": 0.20412, "4k": 0.81648 },
+    withVideoInput: { "480p": 0.0237798, "720p": 0.05346, "1080p": 0.120285, "4k": 0.48114 },
+  },
+  "bytedance/seedance-2.0-mini": {
+    withAudio: { "480p": 0.033628, "720p": 0.0756, "1080p": 0.1701, "4k": 0.6804 },
+    withoutAudio: { "480p": 0.033628, "720p": 0.0756, "1080p": 0.1701, "4k": 0.6804 },
+    withVideoInput: { "480p": 0.0201768, "720p": 0.04536, "1080p": 0.10206, "4k": 0.40824 },
+  },
+};
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("OpenRouter 响应格式错误");
@@ -229,7 +250,7 @@ export default {
   apiUrl: "https://openrouter.ai/api/v1",
   readme: `OpenRouter 图片与视频生成接口。
 
-白名单提供 6 个图片模型和 9 个视频模型，覆盖快速、低成本、高质量、参考图和视频音频场景。图片只开放支持图像生成的模型；视频支持文生视频、单图首帧、首尾帧和混合参考，并按所选时长、分辨率和音频设置预估费用。
+白名单提供 4 个图片模型和 9 个视频模型，覆盖快速、低成本、高质量、参考图和视频音频场景。图片只开放支持可预估费用的图像生成模型；视频支持文生视频、单图首帧、首尾帧和混合参考，并按所选时长、分辨率和音频设置预估费用。
 
  \n 👉 API Key：[OpenRouter Keys](https://openrouter.ai/settings/keys)`,
   rules,
@@ -376,16 +397,29 @@ export default {
     if (request.type !== "video") return null;
     const config = videoConfigs.get(request.model);
     if (!config) return null;
+    const durations = [...new Set(config.durationResolutionMap.flatMap(item => item.duration))].sort((left, right) => left - right);
+    const resolutions = [...new Set(config.durationResolutionMap.flatMap(item => item.resolution))];
+    const resolution = request.resolution?.toLowerCase() ?? resolutions[0]?.toLowerCase();
+    const withAudio = config.audio === false ? false : request.generateAudio ?? true;
+    const duration = request.duration ?? durations[0] ?? 5;
+    const seedancePrices = seedancePriceBooks[config.id];
+    if (seedancePrices) {
+      const rates = request.videos?.length ? seedancePrices.withVideoInput : withAudio ? seedancePrices.withAudio : seedancePrices.withoutAudio;
+      const unitPrice = resolution ? rates[resolution] : undefined;
+      if (unitPrice === undefined) return null;
+      const total = Number((unitPrice * duration).toFixed(8));
+      return {
+        price: `约 $${total.toFixed(4)}`,
+        tips: `按 Seedance 价格表 ${duration} 秒、${resolution}${request.videos?.length ? "、含视频输入" : withAudio ? "、含音频" : "、不含音频"}估算，实际费用以完成为准。`,
+        costUsd: total,
+      };
+    }
     const response = await this.tool.fetch(`${apiBase}/videos/models`, { signal: this.signal });
     if (!response.ok) throw new Error(await responseError(this, response, "OpenRouter 视频价格查询失败"));
     const payload = object(await response.json());
     const models = Array.isArray(payload.data) ? payload.data.map(object) : [];
     const model = models.find(item => item.id === config.id);
     const skus = model?.pricing_skus && typeof model.pricing_skus === "object" ? model.pricing_skus as Record<string, unknown> : {};
-    const durations = [...new Set(config.durationResolutionMap.flatMap(item => item.duration))].sort((left, right) => left - right);
-    const resolutions = [...new Set(config.durationResolutionMap.flatMap(item => item.resolution))];
-    const resolution = request.resolution?.toLowerCase() ?? resolutions[0]?.toLowerCase();
-    const withAudio = config.audio === false ? false : request.generateAudio ?? true;
     const priceKeys = [
       resolution && withAudio ? `duration_seconds_with_audio_${resolution}` : undefined,
       resolution && !withAudio ? `duration_seconds_without_audio_${resolution}` : undefined,
@@ -401,7 +435,6 @@ export default {
       if (unitPrice !== undefined) break;
     }
     if (unitPrice === undefined) return null;
-    const duration = request.duration ?? durations[0] ?? 5;
     const total = unitPrice * duration;
     return {
       price: `约 $${total.toFixed(4)}`,
