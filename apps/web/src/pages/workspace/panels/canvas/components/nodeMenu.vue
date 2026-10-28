@@ -28,47 +28,47 @@
         ref="menuList"
         class="nodeMenu"
         @focus.self="menuLevel === 'nodes' && nodeMenuItemsRef?.focusFirst()"
-        :aria-label="menuLevel === 'selection' ? '选区操作' : menuLevel === 'arrange' ? '整理选中节点' : menuLevel === 'actions' ? '操作菜单' : '添加节点'">
+        :aria-label="menuLevel === 'selection' ? translate('选区操作') : menuLevel === 'arrange' ? translate('整理选中节点') : menuLevel === 'actions' ? translate('操作菜单') : translate('添加节点')">
         <template v-if="menuLevel === 'selection'">
           <el-dropdown-item command="duplicateSelection" :icon="IconCopyPlus" :disabled="selectionBusy || deleting || !selectedNodes.length">
-            创建副本
+            {{ translate("创建副本") }}
           </el-dropdown-item>
           <el-dropdown-item command="arrange" :icon="IconLayoutGrid" :disabled="!canArrangeSelection">
-            <span>整理选中节点</span>
+            <span>{{ translate("整理选中节点") }}</span>
             <icon-chevron-right class="nextIcon" :size="14" />
           </el-dropdown-item>
           <el-dropdown-item
             command="deleteSelection"
             :icon="IconTrash"
             :disabled="selectionBusy || deleting || !selectedNodes.some((node) => node.deletable !== false)">
-            {{ deleting ? "删除中…" : `删除选中节点（${selectedNodes.length}）` }}
+            {{ deleting ? translate("删除中…") : translate("删除选中节点（{0}）", { 0: selectedNodes.length }) }}
           </el-dropdown-item>
         </template>
         <template v-else-if="menuLevel === 'arrange'">
-          <el-dropdown-item command="selection" :icon="IconChevronLeft">返回选区操作</el-dropdown-item>
+          <el-dropdown-item command="selection" :icon="IconChevronLeft">{{ translate("返回选区操作") }}</el-dropdown-item>
           <el-divider />
-          <el-dropdown-item command="horizontal" :icon="IconLayoutColumns" :disabled="!canArrangeSelection">水平排列</el-dropdown-item>
-          <el-dropdown-item command="vertical" :icon="IconLayoutRows" :disabled="!canArrangeSelection">垂直排列</el-dropdown-item>
-          <el-dropdown-item command="grid" :icon="IconLayoutGrid" :disabled="!canArrangeSelection">宫格排列</el-dropdown-item>
+          <el-dropdown-item command="horizontal" :icon="IconLayoutColumns" :disabled="!canArrangeSelection">{{ translate("水平排列") }}</el-dropdown-item>
+          <el-dropdown-item command="vertical" :icon="IconLayoutRows" :disabled="!canArrangeSelection">{{ translate("垂直排列") }}</el-dropdown-item>
+          <el-dropdown-item command="grid" :icon="IconLayoutGrid" :disabled="!canArrangeSelection">{{ translate("宫格排列") }}</el-dropdown-item>
         </template>
         <template v-else-if="menuLevel === 'actions'">
-          <el-dropdown-item command="upload" :icon="IconUpload" :disabled="!uploadFiles">上传</el-dropdown-item>
+          <el-dropdown-item command="upload" :icon="IconUpload" :disabled="!uploadFiles">{{ translate("上传") }}</el-dropdown-item>
           <el-dropdown-item command="nodes" :icon="IconPlus">
-            <span>添加节点</span>
+            <span>{{ translate("添加节点") }}</span>
             <icon-chevron-right class="nextIcon" :size="14" />
           </el-dropdown-item>
           <el-divider />
-          <el-dropdown-item command="undo" :icon="IconArrowBackUp" :disabled="!canUndo">撤销</el-dropdown-item>
-          <el-dropdown-item command="redo" :icon="IconArrowForwardUp" :disabled="!canRedo">重做</el-dropdown-item>
+          <el-dropdown-item command="undo" :icon="IconArrowBackUp" :disabled="!canUndo">{{ translate("撤销") }}</el-dropdown-item>
+          <el-dropdown-item command="redo" :icon="IconArrowForwardUp" :disabled="!canRedo">{{ translate("重做") }}</el-dropdown-item>
           <el-divider />
           <el-dropdown-item command="paste" :icon="IconClipboard" :disabled="!pasteNode || pasting">
-            {{ pasting ? "粘贴中…" : "粘贴" }}
+            {{ pasting ? translate("粘贴中…") : translate("粘贴") }}
           </el-dropdown-item>
         </template>
         <template v-else>
-          <el-dropdown-item v-if="!directNodes" command="actions" :icon="IconChevronLeft">返回操作菜单</el-dropdown-item>
-          <el-dropdown-item v-else disabled>添加节点</el-dropdown-item>
-          <el-dropdown-item v-if="!menuItems.length" disabled>{{ pendingHandle || pendingGroup.length ? "没有可连接的节点" : "没有可显示的节点" }}</el-dropdown-item>
+          <el-dropdown-item v-if="!directNodes" command="actions" :icon="IconChevronLeft">{{ translate("返回操作菜单") }}</el-dropdown-item>
+          <el-dropdown-item v-else disabled>{{ translate("添加节点") }}</el-dropdown-item>
+          <el-dropdown-item v-if="!menuItems.length" disabled>{{ pendingHandle || pendingGroup.length ? translate("没有可连接的节点") : translate("没有可显示的节点") }}</el-dropdown-item>
           <nodeMenuItems
             v-if="menuVisible"
             ref="nodeMenuItemsRef"
@@ -89,6 +89,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, type Component } from "vue";
 import { useVueFlow, type ConnectingHandle, type GraphNode, type HandleType } from "@vue-flow/core";
 import { isTypeCompatible, useNodeEvent, validateConnection, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
+import { translate } from "@toonflow/i18n/vue";
 import { ElMessage } from "element-plus";
 import type { DropdownInstance } from "element-plus";
 import selectionHandle from "./selectionHandle.vue";

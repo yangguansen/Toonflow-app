@@ -7,11 +7,11 @@
           type="button"
           class="menuButton"
           role="menuitem"
-          :title="item.label"
+          :title="menuLabel(item)"
           @mouseenter="focusItem($event, item)"
           @click="emit('select', item.type)">
           <component :is="nodeByType.get(item.type)?.icon ?? IconBox" class="menuIcon" :size="14" />
-          <span class="menuLabel">{{ item.label }}</span>
+          <span class="menuLabel">{{ menuLabel(item) }}</span>
         </button>
         <el-popover
           v-else
@@ -39,11 +39,11 @@
               role="menuitem"
               aria-haspopup="menu"
               :aria-expanded="openGroupId === item.id"
-              :title="item.label"
+              :title="menuLabel(item)"
               @mouseenter="focusItem($event, item)"
               @click="openGroup(item.id)">
               <component :is="openGroupId === item.id ? IconFolderOpen : IconFolder" class="menuIcon" :size="14" aria-hidden="true" />
-              <span class="menuLabel">{{ item.label }}</span>
+              <span class="menuLabel">{{ menuLabel(item) }}</span>
               <icon-chevron-right class="nextIcon" :size="14" />
             </button>
           </template>
@@ -62,7 +62,7 @@
         <el-divider />
         <button type="button" class="menuButton" role="menuitem" :disabled="uploadDisabled" @mouseenter="focusItem($event)" @click="emit('upload')">
           <icon-upload class="menuIcon" :size="14" />
-          <span class="menuLabel">上传</span>
+          <span class="menuLabel">{{ translate("上传") }}</span>
         </button>
       </template>
     </div>
@@ -72,6 +72,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef, type Component, type ComponentPublicInstance } from "vue";
 import { IconBox, IconChevronRight, IconFolder, IconFolderOpen, IconUpload } from "@tabler/icons-vue";
+import { translate } from "@toonflow/i18n/vue";
 import type { NodeMenuItem } from "@toonflow/server/nodeMenu";
 
 const props = withDefaults(defineProps<{
@@ -87,6 +88,17 @@ const openGroupId = ref<string>();
 const childMenus = new Map<string, { focusFirst: (keyboard?: boolean) => void; hasKeyboardFocus: () => boolean }>();
 let keyboardNavigation = false;
 const nodeByType = computed(() => new Map(props.nodes.map(node => [node.type, node])));
+const builtInNodeLabels: Record<string, () => string> = {
+  "remote-textNode": () => translate("文本"),
+  "remote-imageNode": () => translate("图片"),
+  "remote-videoNode": () => translate("视频"),
+  "remote-audioNode": () => translate("音频"),
+  "remote-imageGenerationNode": () => translate("图片生成"),
+  "remote-videoGenerationNode": () => translate("视频生成"),
+  "remote-audioGenerationNode": () => translate("音频生成"),
+  "remote-frameAnalysisNode": () => translate("逐帧拉片"),
+  "remote-director3dNode": () => translate("3D导演台"),
+};
 
 onMounted(() => {
   // ACT: 挂到直接父浮层，避开列表滚动裁剪，也让三级菜单保持父层的悬浮状态。
@@ -105,6 +117,12 @@ function focusButton(button?: HTMLButtonElement) {
 function focusFirst(keyboard = false) {
   keyboardNavigation = keyboard;
   focusButton(menuButtons()[0]);
+}
+
+function menuLabel(item: NodeMenuItem) {
+  if (item.alias) return item.alias;
+  if (!item.type) return item.label;
+  return builtInNodeLabels[item.type]?.() ?? translate(item.label);
 }
 
 function setChildMenu(id: string, instance: Element | ComponentPublicInstance | null) {

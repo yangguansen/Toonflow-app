@@ -1,9 +1,9 @@
 <template>
-  <nodeSkeleton v-if="loading" loading :label="node.data.label || node.type" :handles="node.data.handles" :outputs="node.data.outputs" />
+  <nodeSkeleton v-if="loading" loading :label="translate(node.data.label || node.type)" :handles="node.data.handles" :outputs="node.data.outputs" />
   <component v-else-if="component && !error && !runtimeError" :is="component" v-bind="$attrs" />
   <el-card v-else class="remoteNodeState failed" shadow="never" role="alert">
     <div class="stateHeader">
-      <strong>{{ node.data.label || node.type }}</strong>
+      <strong>{{ translate(node.data.label || node.type) }}</strong>
       <span class="stateLabel">error</span>
       <div class="stateActions nodrag nopan" @pointerdown.stop @mousedown.stop @dblclick.stop>
         <el-button :icon="IconRefresh" text :loading="reloading" title="重新加载节点" aria-label="重新加载节点" @click.stop="retry" />
@@ -19,6 +19,7 @@ import { inject, onErrorCaptured, ref, watch, type Component } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { ElButton, ElCard } from "element-plus";
 import { IconRefresh, IconTrash } from "@tabler/icons-vue";
+import { translate } from "@toonflow/i18n/vue";
 import { nodeSkeleton, type NodeData } from "@toonflow/nodes-scaffold/runtime";
 
 defineOptions({ inheritAttrs: false });

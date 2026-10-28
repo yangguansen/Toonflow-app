@@ -171,7 +171,14 @@
         <img class="brandLogo" src="/favicon.ico" alt="" @load="usePngFavicon" @error="usePngFavicon" />
         <span>AI classroom</span>
       </button>
-      <p>{{ copy.footerDescription }}</p>
+      <div class="footerMeta">
+        <p>{{ copy.footerDescription }}</p>
+        <a class="discordLink" :href="discordUrl" target="_blank" rel="noopener noreferrer" :aria-label="copy.discordAriaLabel">
+          <icon-brand-discord :size="17" aria-hidden="true" />
+          <span>{{ copy.discord }}</span>
+          <icon-arrow-up-right :size="13" aria-hidden="true" />
+        </a>
+      </div>
     </footer>
 
     <loginDialog v-model="loginVisible" />
@@ -185,6 +192,7 @@ import { translate } from "@toonflow/i18n/vue";
 import {
   IconArrowRight,
   IconArrowUpRight,
+  IconBrandDiscord,
   IconBulb,
   IconCamera,
   IconCheck,
@@ -204,6 +212,7 @@ import landingCharacter from "@/assets/landing/landingCharacter.jpg";
 import landingDirector from "@/assets/landing/landingDirector.jpg";
 import landingVideo from "@/assets/landing/landingVideo.jpg";
 
+const discordUrl = "https://discord.gg/mdXAaHnKyB";
 const workflowIcons = [IconBulb, IconLayoutGrid, IconCamera, IconStack2];
 const copy = computed(() => ({
   homeLabel: translate("AI classroom 首页"),
@@ -295,6 +304,8 @@ const copy = computed(() => ({
   finalCtaDescription: translate("打开 Workspace，把灵感变成剧本，把文字变成画面，再把画面变成故事。"),
   backToTop: translate("返回页面顶部"),
   footerDescription: translate("AI 短剧与视频创作工作区。"),
+  discord: translate("Discord"),
+  discordAriaLabel: translate("在新窗口打开 Discord 社区"),
 }));
 const router = useRouter();
 const route = useRoute();
@@ -1131,6 +1142,33 @@ onUnmounted(() => {
     }
   }
 
+  .footerMeta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .discordLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--landingMuted);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 180ms ease;
+
+    &:hover {
+      color: var(--landingText);
+    }
+
+    &:focus-visible {
+      border-radius: 4px;
+      outline: 2px solid var(--landingAccent);
+      outline-offset: 4px;
+    }
+  }
+
   [data-reveal].revealPending {
     opacity: 0;
     transform: translateY(24px);
@@ -1333,6 +1371,11 @@ onUnmounted(() => {
       align-items: flex-start;
       flex-direction: column;
       gap: 18px;
+    }
+
+    .footerMeta {
+      justify-content: space-between;
+      width: 100%;
     }
   }
 

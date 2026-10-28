@@ -1,5 +1,6 @@
 import { computed, getCurrentInstance, inject, readonly, ref, type Component, type Ref } from "vue";
 import { useNode as useFlowNode, useVueFlow } from "@vue-flow/core";
+import { translate } from "@toonflow/i18n/vue";
 import { isTypeCompatible, type NodeData, type NodeHandle } from "./connection";
 import { isNodeOutput, type NodeOutputs } from "./values";
 import { useNodeEvent } from "./nodeEvent";
@@ -36,7 +37,7 @@ export function useNode<T extends NodeOutputs = NodeOutputs>(options: NodeOption
   const outputs = ref({ ...options.outputs, ...savedOutputs }) as Ref<T>;
   const nodeProps = computed(() => ({
     previewReady: previewReady.value,
-    label: node.data.label ?? options.label,
+    label: translate(node.data.label ?? options.label ?? ""),
     icon: options.icon ?? defaults?.icon,
     handles: handles.value,
     outputs: outputs.value,

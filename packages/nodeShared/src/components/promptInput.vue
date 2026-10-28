@@ -15,6 +15,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { ElButton, ElDialog, ElImageViewer, useZIndex } from "element-plus";
 import { IconMaximize } from "@tabler/icons-vue";
+import { locale, translate } from "@toonflow/i18n/vue";
 import xSender, { type AnyTagProps, type MentionItem } from "x-sender";
 import "x-sender/lib/XSender.css";
 
@@ -187,11 +188,18 @@ watch(() => props.references, async (options) => {
   const instance = sender;
   if (!instance) return;
   instance.bus.emit(xSender.EventSet.EVENT_COMMON_DIALOG_CLOSE);
-  instance.updateConfig({ mentionConfig: { dialogTitle: "选择参考", callEvery: false, options } });
+  instance.updateConfig({ mentionConfig: { dialogTitle: translate("选择参考"), callEvery: false, options } });
   // 等库将本帧的输入 DOM 写回模型后再更新参考，避免用旧文本重建输入框。
   await instance.nextTick();
   if (sender === instance) syncModel();
 }, { deep: true });
+
+watch([locale, () => props.placeholder], () => {
+  sender?.updateConfig({
+    placeholder: promptPlaceholder(),
+    mentionConfig: { dialogTitle: translate("选择参考"), callEvery: false, options: props.references },
+  });
+});
 
 watch(senderElement, (element, _previous, onCleanup) => {
   if (!element) return;
@@ -202,10 +210,10 @@ watch(senderElement, (element, _previous, onCleanup) => {
   const initialModel: AnyTagProps[][] = model.value.length ? model.value : text.value.split("\n").map(text => [{ type: "Write", text }]);
   const instance = new xSender(element, {
     autoFocus: false,
-    placeholder: props.placeholder ?? "描述一下生成风格提示词，输入 @ 引用参考",
+    placeholder: promptPlaceholder(),
     chatStyle: { minHeight: "70px", maxHeight: "180px", fontSize: "14px", lineHeight: "1.6" },
     getPopupContainer: () => popup,
-    mentionConfig: { dialogTitle: "选择参考", callEvery: false, options: props.references },
+    mentionConfig: { dialogTitle: translate("选择参考"), callEvery: false, options: props.references },
     keyboardSendFun: () => false,
     keyboardWrapFun: event => event.key === "Enter" && !event.isComposing,
   });
@@ -290,11 +298,15 @@ watch(senderElement, (element, _previous, onCleanup) => {
     // ACT: 1.4.6 的 destroy 会删除排队回调仍需用到的字段；先走公开清理事件，库修复后可直接 destroy。
     instance.bus.offKeyEvent("textPrompt");
     instance.bus.emit(xSender.EventSet.EVENT_COMMON_DIALOG_CLOSE);
-    instance.updateConfig({ mentionConfig: { dialogTitle: "选择参考", callEvery: false, options: [] } });
+    instance.updateConfig({ mentionConfig: { dialogTitle: translate("选择参考"), callEvery: false, options: [] } });
     instance.bus.emit(xSender.EventSet.EVENT_COMMON_DESTROY);
     popup.remove();
   });
 });
+
+function promptPlaceholder() {
+  return props.placeholder ?? translate("描述一下生成风格提示词，输入 @ 引用参考");
+}
 
 async function insertReference(reference: MentionItem) {
   const instance = sender;

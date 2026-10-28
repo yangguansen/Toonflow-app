@@ -9,7 +9,7 @@ const rules = [
 ] as const;
 
 const apiBase = "https://openrouter.ai/api/v1";
-const version = "2.3.0";
+const version = "2.4.0";
 const providerModels = [
   {
     id: "qwen/qwen-image-2.1-turbo", label: "Qwen Image 2.1 Turbo", type: "image",
@@ -32,6 +32,16 @@ const providerModels = [
     imageRatios: ["21:9", "2:1", "16:9", "3:2", "4:3", "1:1", "3:4", "2:3", "9:16", "1:2"],
   },
   {
+    id: "google/gemini-nano-banana-2.1", label: "Nano Banana 2.1", type: "image",
+    mode: ["text", "singleImage", "multiReference"], imageSizes: ["1K", "2K", "4K"], maxReferences: 14, maxOutputs: 1,
+    imageRatios: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"],
+  },
+  {
+    id: "openai/gpt-image-2", label: "GPT Image 2", type: "image",
+    mode: ["text", "singleImage", "multiReference"], imageSizes: ["1K", "2K", "4K"], maxReferences: 16, maxOutputs: 10,
+    imageRatios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"],
+  },
+  {
     id: "minimax/hailuo-3-max", label: "MiniMax H3 Max", type: "video",
     mode: ["text", "singleImage", "startEndRequired"], audio: false,
     imageRatios: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
@@ -48,6 +58,36 @@ const providerModels = [
     mode: ["text", "singleImage", "startEndRequired"], audio: "optional",
     imageRatios: ["16:9", "1:1", "9:16"],
     durationResolutionMap: [{ duration: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["720p"] }],
+  },
+  {
+    id: "kwaivgi/kling-v3.0-pro", label: "Kling 3.0 Pro", type: "video",
+    mode: ["text", "singleImage", "startEndRequired"], audio: "optional",
+    imageRatios: ["16:9", "1:1", "9:16"],
+    durationResolutionMap: [{ duration: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["720p"] }],
+  },
+  {
+    id: "bytedance/seedance-2.0-mini", label: "Seedance 2.0 Mini", type: "video",
+    mode: ["text", "startFrameOptional", ["imageReference:9", "videoReference:3", "audioReference:3"]], audio: "optional",
+    imageRatios: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
+    durationResolutionMap: [{ duration: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["480p", "720p"] }],
+  },
+  {
+    id: "bytedance/seedance-2.5", label: "Seedance 2.5", type: "video",
+    mode: ["text", "startFrameOptional", ["imageReference:9", "videoReference:3", "audioReference:3"]], audio: "optional",
+    imageRatios: ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"],
+    durationResolutionMap: [{ duration: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], resolution: ["480p", "720p"] }],
+  },
+  {
+    id: "bytedance/seedance-2.0", label: "Seedance 2.0", type: "video",
+    mode: ["text", "startFrameOptional", ["imageReference:9", "videoReference:3", "audioReference:3"]], audio: "optional",
+    imageRatios: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
+    durationResolutionMap: [{ duration: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["480p", "720p", "1080p", "4K"] }],
+  },
+  {
+    id: "bytedance/seedance-2.0-fast", label: "Seedance 2.0 Fast", type: "video",
+    mode: ["text", "startFrameOptional", ["imageReference:9", "videoReference:3", "audioReference:3"]], audio: "optional",
+    imageRatios: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
+    durationResolutionMap: [{ duration: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["480p", "720p"] }],
   },
   {
     id: "google/veo-3.1-lite", label: "Veo 3.1 Lite", type: "video",
@@ -189,7 +229,7 @@ export default {
   apiUrl: "https://openrouter.ai/api/v1",
   readme: `OpenRouter 图片与视频生成接口。
 
-MVP 白名单提供 4 个图片模型和 4 个视频模型，覆盖快速、低成本、高质量、参考图和视频音频场景。图片只开放可按输出图片计价的模型；视频支持文生视频、单图首帧和首尾帧，并按所选时长、分辨率和音频设置预估费用。
+白名单提供 6 个图片模型和 9 个视频模型，覆盖快速、低成本、高质量、参考图和视频音频场景。图片只开放支持图像生成的模型；视频支持文生视频、单图首帧、首尾帧和混合参考，并按所选时长、分辨率和音频设置预估费用。
 
  \n 👉 API Key：[OpenRouter Keys](https://openrouter.ai/settings/keys)`,
   rules,
@@ -218,7 +258,7 @@ MVP 白名单提供 4 个图片模型和 4 个视频模型，覆盖快速、低�
         model: request.model,
         prompt: request.prompt,
         n,
-        ...(request.size ? { resolution: request.size } : {}),
+        ...(request.size ? { size: request.size } : {}),
         ...(request.ratio ? { aspect_ratio: request.ratio } : {}),
         ...(request.images?.length ? {
           input_references: request.images.map((image) => ({ type: "image_url", image_url: { url: mediaUrl(image) } })),
@@ -240,7 +280,22 @@ MVP 白名单提供 4 个图片模型和 4 个视频模型，覆盖快速、低�
     const model = videoConfigs.get(request.model);
     if (!model) throw new Error("OpenRouter 视频模型不存在，请重新选择");
     if (!request.prompt.trim()) throw new Error("请输入视频提示词");
-    if (request.videos?.length || request.audios?.length) throw new Error(`${model.label} 当前接入不支持参考视频或参考音频`);
+    const referenceMode = Array.isArray(request.mode)
+      ? model.mode.find(mode => Array.isArray(mode) && JSON.stringify(mode) === JSON.stringify(request.mode)) as string[] | undefined
+      : undefined;
+    if (Array.isArray(request.mode) && !referenceMode) throw new Error(`${model.label} 不支持当前混合参考模式`);
+    if (!referenceMode && (request.videos?.length || request.audios?.length)) throw new Error(`${model.label} 当前接入不支持参考视频或参考音频`);
+    if (referenceMode) {
+      const counts = {
+        image: request.images?.length ?? 0,
+        video: request.videos?.length ?? 0,
+        audio: request.audios?.length ?? 0,
+      };
+      for (const [type, count] of Object.entries(counts)) {
+        const limit = Number(referenceMode.find(item => item.startsWith(`${type}Reference:`))?.split(":")[1] ?? 0);
+        if (count > limit) throw new Error(`${model.label} 最多支持 ${limit} 个${type === "image" ? "图片" : type === "video" ? "视频" : "音频"}参考`);
+      }
+    }
     if (request.generateAudio && model.audio === false) throw new Error(`${model.label} 不支持生成音频`);
     if (request.watermark !== undefined) throw new Error(`${model.label} 当前接入不支持水印参数`);
     if (request.other && Object.keys(request.other).length) throw new Error(`${model.label} 不支持额外参数`);
@@ -252,10 +307,15 @@ MVP 白名单提供 4 个图片模型和 4 个视频模型，覆盖快速、低�
     const frames: Record<string, unknown>[] = [];
     if (request.firstFrame) frames.push({ type: "image_url", image_url: { url: mediaUrl(request.firstFrame) }, frame_type: "first_frame" });
     if (request.lastFrame) frames.push({ type: "image_url", image_url: { url: mediaUrl(request.lastFrame) }, frame_type: "last_frame" });
-    if (!frames.length && request.images?.length) {
-      if (request.images.length !== 1) throw new Error("MiniMax H3 Max 图生视频需要一张图片或显式首尾帧");
+    if (!frames.length && request.images?.length && !referenceMode) {
+      if (request.images.length !== 1) throw new Error(`${model.label} 图生视频需要一张图片或显式首尾帧`);
       frames.push({ type: "image_url", image_url: { url: mediaUrl(request.images[0]!) }, frame_type: "first_frame" });
     }
+    const inputReferences = referenceMode ? [
+      ...(request.images ?? []).map(image => ({ type: "image_url", image_url: { url: mediaUrl(image) } })),
+      ...(request.videos ?? []).map(video => ({ type: "video_url", video_url: { url: mediaUrl(video) } })),
+      ...(request.audios ?? []).map(audio => ({ type: "audio_url", audio_url: { url: mediaUrl(audio) } })),
+    ] : [];
     const signal = AbortSignal.any([AbortSignal.timeout(30 * 60_000), ...(this.signal ? [this.signal] : [])]);
     const submitResponse = await this.tool.fetch(`${apiBase}/videos`, {
       method: "POST",
@@ -268,6 +328,7 @@ MVP 白名单提供 4 个图片模型和 4 个视频模型，覆盖快速、低�
         ...(request.ratio ? { aspect_ratio: request.ratio } : {}),
         ...(model.audio !== false && request.generateAudio !== undefined ? { generate_audio: request.generateAudio } : {}),
         ...(frames.length ? { frame_images: frames } : {}),
+        ...(inputReferences.length ? { input_references: inputReferences } : {}),
       }),
       signal,
     });

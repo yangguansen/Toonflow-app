@@ -178,6 +178,7 @@ import {
   IconLoader2,
 } from "@tabler/icons-vue";
 import { ElCard, ElButton, ElDivider, ElDropdown, ElDropdownMenu, ElDropdownItem, ElMessage } from "element-plus";
+import { translate } from "@toonflow/i18n/vue";
 import type { DropdownInstance } from "element-plus";
 import { validateConnection } from "./connection";
 import { useNodeEvent } from "./nodeEvent";
@@ -477,7 +478,7 @@ async function handleCommand(command: string) {
       zIndex: node.zIndex,
       type: node.type,
       position: copyPosition,
-      data: { ...data, label: `${props.label} - 副本` },
+      data: { ...data, label: `${props.label} - ${translate("副本")}` },
       parentNode: node.parentNode,
     });
     await nextTick();
