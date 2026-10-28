@@ -1924,7 +1924,8 @@
   "画布": [
     "apps/web/src/components/settings/panels/mcp/index.vue",
     "apps/web/src/components/agent/mentionMenu.vue",
-    "apps/web/src/pages/workspace/index.vue"
+    "apps/web/src/pages/workspace/index.vue",
+    "apps/web/src/pages/landing/index.vue"
   ],
   "画布与节点操作需要 AI classroom 界面保持打开。": [
     "apps/web/src/components/settings/panels/mcp/index.vue"
@@ -5946,10 +5947,12 @@
     "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue"
   ],
   "图片生成": [
-    "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue",
+    "apps/web/src/pages/landing/index.vue"
   ],
   "视频生成": [
-    "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue",
+    "apps/web/src/pages/landing/index.vue"
   ],
   "音频生成": [
     "apps/web/src/pages/workspace/panels/canvas/components/canvasEmpty.vue"
@@ -6159,34 +6162,34 @@
     "apps/web/src/pages/hello/index.vue"
   ],
   "登录 AI classroom": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "使用 {0} 登录": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "当前环境尚未启用 OAuth 登录方式。": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "无法发起登录": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "请输入邮箱": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "邮箱": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "发送登录链接": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "登录链接已发送": [
     "apps/server/src/routes/auth/magicLink.ts"
   ],
   "登录链接已发送，请检查 {0} 的收件箱并打开链接。": [
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "请求过于频繁，请稍后再试": [
     "apps/server/src/utils/auth/supabase.ts"
@@ -6197,7 +6200,7 @@
   "无法发送登录链接，请稍后重试": [
     "apps/server/src/utils/auth/supabase.ts",
     "apps/web/src/lib/auth.ts",
-    "apps/web/src/pages/login/index.vue"
+    "apps/web/src/components/loginDialog.vue"
   ],
   "请求来源无效": [
     "apps/server/src/app.ts"
@@ -9179,5 +9182,221 @@
   ],
   "暂无已核验的独立预编译程序，暂不支持自动下载": [
     "packages/ffmpeg/src/catalog.ts"
+  ],
+  "AI classroom 首页": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "落地页导航": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "创作能力": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "工作流": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI 视频创作工作区": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "从一个想法，": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "到一部完整短片。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "在无限画布中编写剧本、拆解分镜、生成角色与场景，再把关键画面变成镜头。AI classroom 把短剧创作中的每一步，连成一条看得见的工作流。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "进入 Workspace": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "了解创作方式": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "核心能力": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "剧本与分镜": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "角色与场景": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "画布 · 小蝌蚪找妈妈": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "已自动保存": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI classroom 在无限画布中展示剧本、角色、场景和分镜节点": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "剧本节点": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "第 01 场 · 池塘清晨": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "视频镜头": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "一张画布 · 一个故事": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "不是把工具放在一起，": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "而是让内容真正流转起来。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "剧本、角色、图片和视频不是四个孤立的生成框。它们在同一个工作区中相连，上一环节的结果会直接成为下一环节的创作素材。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "01 · 剧本": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "把一个灵感，写成能拍出来的镜头。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "用文本节点生成或手写短剧本，继续拆解场景、人物动作和镜头描述。每段内容都可以连接到后续角色、场景与视频节点。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "Markdown 编辑与持续保存": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "剧本、分镜和提示词统一管理": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "各类素材可作为文本创作参考": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "剧本节点界面示意": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "01_分镜与视频提示词": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "场景 01 · 池塘 · 清晨": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "水面上浮着一层薄雾。小蝌蚪第一次离开水草，循着光向池塘深处游去。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "镜头：": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "低机位贴近水面，缓慢向前推进。前景芦苇虚化，远处传来鸭妈妈的叫声。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "# 水彩绘本": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "# 缓慢推进": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "02 · 图片": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "从角色设定，到可以进入镜头的画面。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "生成角色、场景、道具和分镜图，并让文本、图片和视频参考共同参与创作。角色立绘和场景资产可以持续复用到后续镜头。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "角色、场景和道具分镜": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "多参考图与提示词自由组合": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "图片可直接流向视频生成": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "角色与场景资产": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI classroom 画布中的角色三视图与图片生成节点": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "角色三视图 · 风格参考": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "03 · 视频": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "让关键帧成为动作，让分镜成为片段。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "使用文本、图片或首尾帧生成视频，也能在 3D 导演台中先完成走位和运镜预演。视频、音频和拉片结果继续回到同一张画布。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "文生视频、参考图与首尾帧": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "3D 场景和镜头预演": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "视频截帧、音频与逐帧拉片": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI classroom 3D 导演台中的角色走位与镜头预演": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI classroom 视频生成节点与镜头预览": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "镜头预演与视频生成": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "创作流程": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "从故事开始，": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "在画布上完成整条创作链路。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "写下故事": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "从一句灵感开始，生成或编辑短剧本。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "设计镜头": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "整理角色、场景与分镜，让视觉保持一致。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "生成画面": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "把关键帧推进为动态镜头，完成镜头预演。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "回到素材": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "视频、音频和拉片结果回到同一工作区继续使用。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "从灵感开始": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "你的下一部短片，": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "可以从一句话开始。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "打开 Workspace，把灵感变成剧本，把文字变成画面，再把画面变成故事。": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "返回页面顶部": [
+    "apps/web/src/pages/landing/index.vue"
+  ],
+  "AI 短剧与视频创作工作区。": [
+    "apps/web/src/pages/landing/index.vue"
   ]
 }

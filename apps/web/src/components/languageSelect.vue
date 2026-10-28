@@ -69,6 +69,7 @@ import { computed, nextTick, ref } from "vue";
 import { IconCheck, IconChevronDown, IconDeviceDesktop, IconLanguage, IconWorld, IconX } from "@tabler/icons-vue";
 import { detectLocale, isRtlLocale, supportedLocales, type Locale } from "@toonflow/i18n";
 import { locale, translate } from "@toonflow/i18n/vue";
+import { saveLanguagePreference } from "@/lib/i18n";
 import { uiSettings, updateUiSettings } from "@/stores/settings";
 import languageFlags from "@/assets/languageFlags.svg?url";
 
@@ -88,6 +89,7 @@ const rtl = computed(() => isRtlLocale(locale.value));
 
 function changeLanguage(language: Locale | "system") {
   if (uiSettings.value.language !== language) updateUiSettings({ language });
+  saveLanguagePreference(language);
   emit("select");
 }
 function focusSelected() {

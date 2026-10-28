@@ -1,8 +1,8 @@
 import axios, { type AxiosInstance } from "axios";
 import { computed, watch } from "vue";
-import { detectLocale, isRtlLocale } from "@toonflow/i18n";
+import { detectLocale, isRtlLocale, normalizeLocale, type Locale } from "@toonflow/i18n";
 import { locale, setLocale, translate } from "@toonflow/i18n/vue";
-import { uiSettings } from "@/stores/settings";
+import { settings, uiSettings } from "@/stores/settings";
 import type { LocaleConfig } from "vue-stream-markdown";
 import "dayjs/locale/zh-cn";
 import "dayjs/locale/zh-tw";
@@ -25,6 +25,23 @@ import "dayjs/locale/ar";
 import "dayjs/locale/fa";
 import "dayjs/locale/tr";
 
+const languagePreferenceKey = "toonflow.language";
+
+function readLanguagePreference(): Locale | "system" | undefined {
+  try {
+    const value = localStorage.getItem(languagePreferenceKey);
+    return value === "system" ? "system" : normalizeLocale(value);
+  } catch {
+    return;
+  }
+}
+
+export function saveLanguagePreference(language: Locale | "system") {
+  try {
+    localStorage.setItem(languagePreferenceKey, language);
+  } catch { /* 存储不可用时仅对当前会话生效。 */ }
+}
+
 export function registerApiLanguage(client: AxiosInstance) {
   const interceptor = client.interceptors.request.use(config => {
     const url = new URL(client.getUri(config), window.location.href);
@@ -36,7 +53,19 @@ export function registerApiLanguage(client: AxiosInstance) {
 }
 
 export function registerLanguage() {
-  const applyLanguage = () => setLocale(uiSettings.value.language === "system" ? detectLocale(navigator.languages) : uiSettings.value.language);
+  const applyLanguage = () => {
+    const configured = settingsLanguage();
+    const preferred = configured ?? readLanguagePreference();
+    if (!configured && preferred && preferred !== "system") {
+      const ui = settings.value.ui;
+      settings.value = {
+        ...settings.value,
+        ui: { ...(ui && typeof ui === "object" && !Array.isArray(ui) ? ui : {}), language: preferred },
+      };
+    }
+    setLocale(preferred && preferred !== "system" ? preferred : detectLocale(navigator.languages));
+    if (configured) saveLanguagePreference(configured);
+  };
   const stopSettings = watch(() => uiSettings.value.language, applyLanguage, { immediate: true, flush: "sync" });
   const stopDocument = watch(locale, value => {
     document.documentElement.lang = value;
@@ -50,6 +79,10 @@ export function registerLanguage() {
     stopRequests();
     window.removeEventListener("languagechange", applyLanguage);
   };
+}
+
+function settingsLanguage(): Locale | "system" | undefined {
+  return "ui" in settings.value ? uiSettings.value.language : undefined;
 }
 
 // ACT: 只翻译 Markdown 控件，用户输入和模型生成的正文原样显示。

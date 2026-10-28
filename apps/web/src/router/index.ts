@@ -2,17 +2,17 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import { authState } from "@/lib/auth";
 import { loadSettings } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
+
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
       path: "/",
-      redirect: "/home",
+      component: () => import("@/pages/landing/index.vue"),
     },
     {
       path: "/login",
-      meta: { public: true },
-      component: () => import("@/pages/login/index.vue"),
+      redirect: { path: "/", query: { login: "1" } },
     },
     {
       path: "/home",
@@ -31,8 +31,8 @@ const router = createRouter({
   ],
 });
 router.beforeEach(async to => {
-  if (to.meta.public) return authState.authenticated ? { path: "/home", replace: true } : true;
-  if (!authState.authenticated) return { path: "/login", replace: true };
+  if (!to.meta.requiresAuth) return true;
+  if (!authState.authenticated) return { path: "/", query: { login: "1" }, replace: true };
   await loadSettings();
   if (to.path === "/workspace") {
     const workspace = useWorkspaceStore();

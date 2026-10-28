@@ -501,7 +501,7 @@ async function logout() {
   workspaceStore.project = null;
   workspaceStore.projectList = [];
   workspaceStore.pendingAgentMessage = null;
-  await router.replace("/login");
+  await router.replace("/");
 }
 </script>
 

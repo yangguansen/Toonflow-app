@@ -46,7 +46,7 @@ export default Router().get("/", validateFields({
     const tokens = await u.authSupabase.exchangeAuthorizationCode(query.code, verifier);
     await u.authSupabase.verifyAccessToken(tokens.accessToken);
     u.authCookies.setSessionCookies(req, res, tokens);
-    res.redirect("/");
+    res.redirect("/#/workspace");
   } catch (error) {
     u.authCookies.clearSessionCookies(req, res);
     console.error("Authentication callback failed:", error);

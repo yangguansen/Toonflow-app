@@ -84,6 +84,7 @@ declare module 'vue' {
     LanguageModel: typeof import('./../components/settings/panels/languageModel/index.vue')['default']
     LanguageSelect: typeof import('./../components/languageSelect.vue')['default']
     LoadingPage: typeof import('./../components/loadingPage.vue')['default']
+    LoginDialog: typeof import('./../components/loginDialog.vue')['default']
     MarkdownImage: typeof import('./../components/markdownImage.vue')['default']
     Mcp: typeof import('./../components/settings/panels/mcp/index.vue')['default']
     McpImportForm: typeof import('./../components/settings/panels/pluginMarket/mcpImportForm.vue')['default']

@@ -54,7 +54,7 @@ function clearAuthState(error = "") {
 function handleUnauthorized() {
   if (!authState.authenticated) return;
   clearAuthState(translate("登录状态已失效，请重新登录"));
-  if (!window.location.hash.startsWith("#/login")) window.location.assign("/#/login");
+  window.location.assign("/#/?login=1");
 }
 
 function installUnauthorizedHandler() {
