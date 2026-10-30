@@ -78,6 +78,7 @@ function applySession(data: SessionResponse) {
   authState.authenticated = data.authenticated;
   authState.profile = data.user;
   authState.isAdmin = data.isAdmin;
+  if (data.authenticated) authState.error = "";
 }
 
 async function loadSession() {
@@ -123,15 +124,25 @@ export function signInWithOAuth(provider: string) {
   window.location.assign(`/api/auth/start?provider=${encodeURIComponent(provider)}`);
 }
 
-export async function sendMagicLink(email: string) {
-  if (!config?.configured) throw new Error(config?.message || translate("Supabase 认证尚未配置"));
-  const response = await fetch("/api/auth/magicLink", {
+async function submitPasswordAuth(path: "/api/auth/passwordLogin" | "/api/auth/passwordSignup", email: string, password: string) {
+  const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, password }),
   });
   const body = await response.json().catch(() => ({})) as { message?: string };
-  if (!response.ok) throw new Error(body.message || translate("无法发送登录链接，请稍后重试"));
+  if (!response.ok) throw new Error(body.message || translate("登录失败，请重试"));
+  await refreshAuthProfile();
+}
+
+export function signInWithPassword(email: string, password: string) {
+  if (!config?.configured) throw new Error(config?.message || translate("Supabase 认证尚未配置"));
+  return submitPasswordAuth("/api/auth/passwordLogin", email, password);
+}
+
+export function signUpWithPassword(email: string, password: string) {
+  if (!config?.configured) throw new Error(config?.message || translate("Supabase 认证尚未配置"));
+  return submitPasswordAuth("/api/auth/passwordSignup", email, password);
 }
 
 export async function refreshAuthProfile() {

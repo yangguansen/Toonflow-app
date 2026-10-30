@@ -844,16 +844,7 @@
   "登录 AI classroom": [
     "apps/web/src/components/loginDialog.vue"
   ],
-  "输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。": [
-    "apps/web/src/components/loginDialog.vue"
-  ],
   "邮箱": [
-    "apps/web/src/components/loginDialog.vue"
-  ],
-  "登录链接已发送，请检查 {0} 的收件箱并打开链接。": [
-    "apps/web/src/components/loginDialog.vue"
-  ],
-  "发送登录链接": [
     "apps/web/src/components/loginDialog.vue"
   ],
   "使用 {0} 登录": [
@@ -867,11 +858,6 @@
   ],
   "请输入邮箱": [
     "apps/web/src/components/loginDialog.vue"
-  ],
-  "无法发送登录链接，请稍后重试": [
-    "apps/web/src/components/loginDialog.vue",
-    "apps/web/src/lib/auth.ts",
-    "apps/server/src/utils/auth/supabase.ts"
   ],
   "图片保存或读取失败": [
     "apps/web/src/components/markdownImage.vue"
@@ -6883,7 +6869,7 @@
   ],
   "请求来源无效": [
     "apps/server/src/app.ts",
-    "apps/server/src/routes/auth/magicLink.ts"
+    "apps/server/src/lib/middleware.ts"
   ],
   "请先登录": [
     "apps/server/src/app.ts",
@@ -7091,9 +7077,6 @@
   ],
   "已退出登录": [
     "apps/server/src/routes/auth/logout.ts"
-  ],
-  "登录链接已发送": [
-    "apps/server/src/routes/auth/magicLink.ts"
   ],
   "当前环境未启用此登录方式": [
     "apps/server/src/routes/auth/start.ts"
@@ -7563,9 +7546,6 @@
     "apps/server/src/utils/auth/supabase.ts"
   ],
   "请求过于频繁，请稍后再试": [
-    "apps/server/src/utils/auth/supabase.ts"
-  ],
-  "无法发送登录链接，请检查邮箱地址或认证配置": [
     "apps/server/src/utils/auth/supabase.ts"
   ],
   "Toonflow 用户": [
@@ -12059,5 +12039,53 @@
   ],
   "FFmpeg 不能操作悬空符号链接": [
     "packages/ffmpeg/src/runtime.ts"
+  ],
+  "账号操作": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "登录": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "注册": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "使用邮箱和密码登录。": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "使用邮箱创建账号，注册后会直接登录。": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "密码": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "创建并登录": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "密码至少需要 6 位": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "创建账号": [
+    "apps/web/src/components/loginDialog.vue"
+  ],
+  "登录成功": [
+    "apps/server/src/routes/auth/passwordLogin.ts"
+  ],
+  "注册成功": [
+    "apps/server/src/routes/auth/passwordSignup.ts"
+  ],
+  "邮箱或密码错误": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "认证服务暂不可用，请稍后重试": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "该邮箱已注册，请直接登录": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "注册失败，请检查邮箱和密码": [
+    "apps/server/src/utils/auth/supabase.ts"
+  ],
+  "Supabase 邮箱确认尚未关闭，无法直接完成注册": [
+    "apps/server/src/utils/auth/supabase.ts"
   ]
 }

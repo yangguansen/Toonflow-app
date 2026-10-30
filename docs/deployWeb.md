@@ -1,11 +1,11 @@
 # Web SaaS 最小部署
 
-本项目只部署浏览器版 Web 服务端，不提供桌面端或移动端。Magic Link 也不做桌面协议唤起或跨端会话回传；登录链接必须在发起请求的同一浏览器中打开。订阅套餐和自动充值不在当前 MVP 范围内。
+本项目只部署浏览器版 Web 服务端，不提供桌面端或移动端。邮箱密码登录在注册和登录时不发送邮件；OAuth 也不做桌面协议唤起或跨端会话回传。订阅套餐和自动充值不在当前 MVP 范围内。
 
 ## 1. 准备外部服务
 
 - 一个 Supabase 项目。
-- 已启用的 Supabase Email Provider。开发或小规模使用可直接使用 Supabase 内置邮件服务。
+- 已启用的 Supabase Email Provider，并关闭 Confirm email。
 - 可选：OAuth Provider，例如 GitHub 或 Google。
 - 一个服务端持有的 OpenRouter API Key。
 - 一个指向服务器的域名。生产环境必须使用 HTTPS。
@@ -27,7 +27,7 @@ Site URL: https://your-domain.example
 Redirect URL: https://your-domain.example/api/auth/callback
 ```
 
-启用 Email Provider，并允许新用户注册以支持首次 Magic Link 自动建号；这不是站点注册表单。邮件模板保留 `{{ .ConfirmationURL }}` 以发送 Magic Link。无需额外配置 SMTP 即可先使用 Supabase 内置邮件服务；正式面向大量用户开放前，再配置自定义 SMTP，避免内置服务的发送频率限制和送达率问题。需要 OAuth 登录时再启用实际使用的 OAuth Provider，并填写平台的 Client ID 与 Secret。
+启用 Email Provider 并关闭 Confirm email，使邮箱密码注册直接返回会话，不触发电子邮件发送。关闭确认后，系统不会验证邮箱所有权，也没有邮件找回密码能力；面向公开用户开放前应增加人机验证和滥用防护。需要 OAuth 登录时再启用实际使用的 OAuth Provider，并填写平台的 Client ID 与 Secret。
 
 ## 3. 配置环境变量
 
@@ -92,7 +92,7 @@ curl http://127.0.0.1:3000/healthz
 
 ## 5. 验证登录与管理员身份
 
-使用任意邮箱发送 Magic Link，并在发起请求的同一浏览器中打开邮件链接。首次登录会由 Supabase 自动创建账号。使用 `TOONFLOW_ADMIN_EMAILS` 中配置的邮箱登录后，打开 `GET /api/auth/session` 确认响应中的 `isAdmin` 为 `true`，并记录 `data.user.id`。
+使用任意格式合法的邮箱和至少 6 位密码创建账号后直接登录；当前流程不发送验证邮件。使用 `TOONFLOW_ADMIN_EMAILS` 中配置的邮箱登录后，打开 `GET /api/auth/session` 确认响应中的 `isAdmin` 为 `true`，并记录 `data.user.id`。
 
 新用户默认没有积分，因此不能发起 OpenRouter 生成。用户可通过 credits 面板进入 Stripe Checkout 购买积分；管理员仍可手动发放积分：
 
@@ -115,7 +115,7 @@ await fetch("/api/credits/grant", {
 
 ## 6. 最小验收
 
-1. 完成 Magic Link 登录。
+1. 完成邮箱密码注册或登录。
 2. 创建项目并打开画布。
 3. 添加一个图片生成节点，选择 OpenRouter Qwen Image 模型。
 4. 输入提示词并生成，确认扣除积分且历史记录出现成功任务。
@@ -125,7 +125,7 @@ await fetch("/api/credits/grant", {
 ## 7. 已知边界
 
 - 视频提交后不可取消，服务端最长等待 35 分钟。
-- Magic Link 使用 PKCE，链接只能在发起登录的同一浏览器中完成；不支持桌面端、移动端或跨设备会话回传。
+- OAuth 使用 PKCE，只面向浏览器 Web 部署，不支持桌面端、移动端或跨设备会话回传。
 - 视频只有在 OpenRouter 返回并成功保存 `jobId` 后才能自动恢复；提交过程中进程退出仍可能丢失该次请求。
 - 自动恢复需要 `durableMediaTasks.sql` 和 `SUPABASE_SERVICE_ROLE_KEY`。
 - 尚未接入退款、订阅和每日免费额度。

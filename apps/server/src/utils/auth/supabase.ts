@@ -37,16 +37,12 @@ type TokenResponse = {
   access_token?: string;
   refresh_token?: string;
   expires_in?: number;
+  code?: string;
   error?: string;
   error_description?: string;
-  msg?: string;
-};
-
-type ErrorResponse = {
-  error?: string;
-  error_description?: string;
-  msg?: string;
+  error_code?: string;
   message?: string;
+  msg?: string;
 };
 
 const authCache = new Map<string, CachedAuth>();
@@ -170,7 +166,7 @@ export async function serviceDatabaseRequest(path: string, init: RequestInit = {
   }, key);
 }
 
-async function tokenRequest(config: SupabaseConfig, grantType: "pkce" | "refresh_token", body: Record<string, string>) {
+async function tokenRequest(config: SupabaseConfig, grantType: "pkce" | "password" | "refresh_token", body: Record<string, string>) {
   let response: Response;
   try {
     response = await fetch(`${config.url}/auth/v1/token?grant_type=${grantType}`, {
@@ -201,43 +197,67 @@ export function exchangeAuthorizationCode(code: string, codeVerifier: string) {
   return tokenRequest(getSupabaseConfig(), "pkce", { auth_code: code, code_verifier: codeVerifier });
 }
 
-export async function sendMagicLink(email: string, redirectTo: string, codeChallenge: string) {
+export async function signInWithPassword(email: string, password: string) {
+  try {
+    return await tokenRequest(getSupabaseConfig(), "password", { email, password });
+  } catch (cause) {
+    const status = (cause as { status?: number }).status;
+    if (status === 401) {
+      throw Object.assign(new Error("邮箱或密码错误", { cause }), { status: 401, code: "AUTH_INVALID_CREDENTIALS" });
+    }
+    if (status === 429) {
+      throw Object.assign(new Error("请求过于频繁，请稍后再试", { cause }), { status: 429, code: "AUTH_RATE_LIMITED" });
+    }
+    if (status && status >= 500) {
+      throw Object.assign(new Error("认证服务暂不可用，请稍后重试", { cause }), { status: 503, code: "AUTH_UNAVAILABLE" });
+    }
+    throw cause;
+  }
+}
+
+export async function signUpWithPassword(email: string, password: string) {
   const config = getSupabaseConfig();
-  const target = new URL(`${config.url}/auth/v1/otp`);
-  target.searchParams.set("redirect_to", redirectTo);
   let response: Response;
   try {
-    response = await fetch(target, {
+    response = await fetch(`${config.url}/auth/v1/signup`, {
       method: "POST",
       headers: {
         apikey: config.anonKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email,
-        create_user: true,
-        code_challenge: codeChallenge,
-        code_challenge_method: "s256",
-      }),
+      body: JSON.stringify({ email, password }),
       signal: AbortSignal.timeout(10000),
     });
   } catch (cause) {
     throw Object.assign(new Error("无法连接 Supabase 认证服务，请检查网络后重试", { cause }), { status: 503, code: "AUTH_UNAVAILABLE" });
   }
-  if (response.ok) return;
 
-  const data = await response.json().catch(() => ({})) as ErrorResponse;
-  const detail = data.error_description || data.message || data.msg || data.error;
-  const status = response.status === 429 ? 429 : response.status >= 500 ? 503 : 400;
-  const message = response.status === 429
-    ? "请求过于频繁，请稍后再试"
-    : status === 503
-      ? "无法发送登录链接，请稍后重试"
-      : "无法发送登录链接，请检查邮箱地址或认证配置";
-  throw Object.assign(new Error(message, detail ? { cause: new Error(detail) } : undefined), {
-    status,
-    code: "AUTH_MAGIC_LINK_FAILED",
-  });
+  const data = await response.json().catch(() => ({})) as TokenResponse;
+  if (!response.ok) {
+    const detail = [data.code, data.error_code, data.error_description, data.message, data.msg, data.error]
+      .filter(Boolean).join(" ").toLowerCase();
+    if (response.status === 429) {
+      throw Object.assign(new Error("请求过于频繁，请稍后再试"), { status: 429, code: "AUTH_RATE_LIMITED" });
+    }
+    if (response.status >= 500) {
+      throw Object.assign(new Error("认证服务暂不可用，请稍后重试"), { status: 503, code: "AUTH_UNAVAILABLE" });
+    }
+    if (/already.*registered|email_exists|user_already_exists/.test(detail)) {
+      throw Object.assign(new Error("该邮箱已注册，请直接登录"), { status: 409, code: "AUTH_EMAIL_EXISTS" });
+    }
+    throw Object.assign(new Error("注册失败，请检查邮箱和密码"), { status: 400, code: "AUTH_PASSWORD_SIGNUP_FAILED" });
+  }
+  if (!data.access_token || !data.refresh_token) {
+    throw Object.assign(new Error("Supabase 邮箱确认尚未关闭，无法直接完成注册"), {
+      status: 409,
+      code: "AUTH_EMAIL_CONFIRMATION_ENABLED",
+    });
+  }
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresIn: Math.max(60, data.expires_in ?? 3600),
+  } satisfies AuthTokens;
 }
 
 export function refreshAuthTokens(refreshToken: string) {

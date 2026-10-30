@@ -20,3 +20,14 @@ export function validateFields(
     next();
   };
 }
+
+export function assertSameOrigin(req: Request, _res: Response, next: NextFunction) {
+  const expectedOrigin = process.env.TOONFLOW_PUBLIC_URL
+    ? new URL(process.env.TOONFLOW_PUBLIC_URL).origin
+    : `${req.protocol}://${req.get("host")}`;
+  const origin = req.get("origin");
+  if ((origin && origin !== expectedOrigin) || req.get("sec-fetch-site") === "cross-site") {
+    throw Object.assign(new Error("请求来源无效"), { status: 403 });
+  }
+  next();
+}

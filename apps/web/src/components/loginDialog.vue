@@ -6,16 +6,40 @@
     alignCenter
     appendToBody
     destroyOnClose
-    :title="translate('登录 AI classroom')"
+    :title="authMode === 'login' ? translate('登录 AI classroom') : translate('创建账号')"
     @closed="resetFeedback">
     <div class="loginDialogContent">
       <div class="brand">
         <img class="brandLogo" src="/favicon.ico" alt="AI classroom" @load="usePngFavicon" @error="usePngFavicon" />
         <span>AI classroom</span>
       </div>
-      <p class="loginDescription">{{ translate("输入邮箱，我们会发送一次性登录链接。首次登录会自动创建账号。") }}</p>
+      <div class="authModeTabs" role="tablist" :aria-label="translate('账号操作')">
+        <button
+          type="button"
+          class="authModeTab"
+          :class="{ active: authMode === 'login' }"
+          role="tab"
+          :aria-selected="authMode === 'login'"
+          :disabled="authPending || !!pendingProvider"
+          @click="switchAuthMode('login')">
+          {{ translate("登录") }}
+        </button>
+        <button
+          type="button"
+          class="authModeTab"
+          :class="{ active: authMode === 'signup' }"
+          role="tab"
+          :aria-selected="authMode === 'signup'"
+          :disabled="authPending || !!pendingProvider"
+          @click="switchAuthMode('signup')">
+          {{ translate("注册") }}
+        </button>
+      </div>
+      <p class="loginDescription">
+        {{ authMode === "login" ? translate("使用邮箱和密码登录。") : translate("使用邮箱创建账号，注册后会直接登录。") }}
+      </p>
       <el-alert v-if="authState.error" :title="authState.error" type="error" :closable="false" showIcon />
-      <el-form v-if="authState.configured" class="emailLogin" labelPosition="top" @submit.prevent="sendLoginLink">
+      <el-form v-if="authState.configured" class="emailLogin" labelPosition="top" @submit.prevent="submitPassword">
         <el-form-item :label="translate('邮箱')">
           <el-input
             ref="emailInput"
@@ -25,14 +49,25 @@
             inputmode="email"
             autocapitalize="none"
             :spellcheck="false"
-            :disabled="emailPending || !!pendingProvider"
-            aria-label="邮箱" />
+            :disabled="authPending || !!pendingProvider"
+            :aria-label="translate('邮箱')" />
+        </el-form-item>
+        <el-form-item :label="translate('密码')">
+          <el-input
+            ref="passwordInput"
+            v-model="password"
+            type="password"
+            :autocomplete="authMode === 'login' ? 'current-password' : 'new-password'"
+            :minlength="6"
+            :maxlength="72"
+            showPassword
+            :disabled="authPending || !!pendingProvider"
+            :aria-label="translate('密码')" />
         </el-form-item>
         <el-alert v-if="emailError" :title="emailError" type="error" :closable="false" showIcon />
-        <el-alert v-if="emailSent" :title="translate('登录链接已发送，请检查 {0} 的收件箱并打开链接。', { 0: email.trim() })" type="success" :closable="false" showIcon />
-        <el-button class="emailLoginButton" type="primary" nativeType="submit" :loading="emailPending" :disabled="!!pendingProvider">
+        <el-button class="emailLoginButton" type="primary" nativeType="submit" :loading="authPending" :disabled="!!pendingProvider">
           <icon-login :size="18" aria-hidden="true" />
-          <span>{{ translate("发送登录链接") }}</span>
+          <span>{{ authMode === "login" ? translate("登录") : translate("创建并登录") }}</span>
         </el-button>
       </el-form>
       <div v-if="providers.length" class="providerActions">
@@ -42,7 +77,7 @@
           class="providerButton"
           type="primary"
           :loading="pendingProvider === provider"
-          :disabled="!!pendingProvider || emailPending"
+          :disabled="!!pendingProvider || authPending"
           @click="login(provider)">
           <icon-brand-github v-if="provider === 'github'" :size="19" aria-hidden="true" />
           <icon-brand-google v-else-if="provider === 'google'" :size="19" aria-hidden="true" />
@@ -56,23 +91,26 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, type InputInstance } from "element-plus";
 import { translate } from "@toonflow/i18n/vue";
 import { IconBrandGithub, IconBrandGoogle, IconLogin } from "@tabler/icons-vue";
-import { authState, getAuthProviders, sendMagicLink, signInWithOAuth } from "@/lib/auth";
+import { authState, getAuthProviders, signInWithOAuth, signInWithPassword, signUpWithPassword } from "@/lib/auth";
 
 const visible = defineModel<boolean>({ required: true });
+const router = useRouter();
 const pendingProvider = ref("");
-const emailPending = ref(false);
+const authPending = ref(false);
+const authMode = ref<"login" | "signup">("login");
 const email = ref("");
+const password = ref("");
 const emailError = ref("");
-const emailSent = ref(false);
 const emailInput = ref<InputInstance>();
+const passwordInput = ref<InputInstance>();
 const providers = computed(() => getAuthProviders());
 
-watch(email, () => {
+watch([email, password], () => {
   emailError.value = "";
-  emailSent.value = false;
 });
 
 watch(() => authState.authenticated, authenticated => {
@@ -90,9 +128,17 @@ function usePngFavicon(event: Event) {
 
 function resetFeedback() {
   pendingProvider.value = "";
-  emailPending.value = false;
+  authPending.value = false;
+  authMode.value = "login";
+  password.value = "";
   emailError.value = "";
-  emailSent.value = false;
+}
+
+function switchAuthMode(mode: "login" | "signup") {
+  if (authPending.value || pendingProvider.value) return;
+  authMode.value = mode;
+  emailError.value = "";
+  emailInput.value?.focus();
 }
 
 async function login(provider: string) {
@@ -106,24 +152,34 @@ async function login(provider: string) {
   }
 }
 
-async function sendLoginLink() {
-  if (emailPending.value) return;
+async function submitPassword() {
+  if (authPending.value) return;
   emailError.value = "";
-  emailSent.value = false;
   if (!email.value.trim()) {
     emailError.value = translate("请输入邮箱");
     emailInput.value?.focus();
     return;
   }
-  emailPending.value = true;
+  if (password.value.length < 6) {
+    emailError.value = translate("密码至少需要 6 位");
+    passwordInput.value?.focus();
+    return;
+  }
+  authPending.value = true;
   try {
-    await sendMagicLink(email.value.trim());
+    const normalizedEmail = email.value.trim();
+    if (authMode.value === "login") {
+      await signInWithPassword(normalizedEmail, password.value);
+    } else {
+      await signUpWithPassword(normalizedEmail, password.value);
+    }
     authState.error = "";
-    emailSent.value = true;
+    visible.value = false;
+    void router.push("/workspace");
   } catch (error) {
-    emailError.value = error instanceof Error ? error.message : translate("无法发送登录链接，请稍后重试");
+    emailError.value = error instanceof Error ? error.message : translate("登录失败，请重试");
   } finally {
-    emailPending.value = false;
+    authPending.value = false;
   }
 }
 </script>
@@ -151,6 +207,43 @@ async function sendLoginLink() {
     margin: 0;
     color: var(--el-text-color-secondary);
     line-height: 1.7;
+  }
+
+  .authModeTabs {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+
+    .authModeTab {
+      position: relative;
+      padding: 0 0 10px;
+      border: 0;
+      background: transparent;
+      color: var(--el-text-color-secondary);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+
+      &.active {
+        color: var(--el-color-primary);
+
+        &::after {
+          position: absolute;
+          right: 0;
+          bottom: -1px;
+          left: 0;
+          height: 2px;
+          border-radius: 2px;
+          background: currentColor;
+          content: "";
+        }
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
   }
 
   .emailLogin {
